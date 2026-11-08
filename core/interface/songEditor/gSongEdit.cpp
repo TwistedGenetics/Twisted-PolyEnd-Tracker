@@ -1,8 +1,15 @@
 #include "songEditor/songEditor.h"
 
 #include "Platform.h"
+#include "core/interfacePopups.h"
+#include "fileManager.h"
 #include "mtSequencer.h"
 #include "string.h"
+
+#include <cr_section_macros.h>
+
+// 1 = a song section starts at this slot (for the song player marks)
+__NOINIT(EXTERNAL_RAM) static uint8_t sectionStartFlags[SONG_MAX + 1];
 
 static const uint16_t framesPlaces[3][4] = {
     { (800 / 8) * 0 + 1, 31, 500 - 3, 391 },
@@ -108,6 +115,11 @@ void cSongEditor::initDisplayControls()
 
 void cSongEditor::refreshTempoField()
 {
+    if (toolsPage || namingSection)
+    {
+        return;
+    }
+
     if (tapTempoActive && tapTempoCount > 1)
     {
         memset(tapText, 0, sizeof(tapText));
@@ -132,6 +144,11 @@ void cSongEditor::refreshTempoField()
 
 void cSongEditor::refreshAddSlotLabel(bool isButtonPressed)
 {
+    if (toolsPage || namingSection)
+    {
+        return;
+    }
+
     if (isButtonPressed)
     {
         display.setControlText(label[3], "Add");
@@ -148,7 +165,11 @@ void cSongEditor::refreshAddSlotLabel(bool isButtonPressed)
 void cSongEditor::showDefaultScreen()
 {
     titleBar->show();
-    titleBar->setTitle("Song");
+    refreshTitle();
+
+    // labels 5 / 6 are moved and re-styled on the tools page
+    display.setControlPosition(label[5], (800 / 8) * 5 + (800 / 8), -1);
+    display.setControlPosition(label[6], (800 / 8) * 6 + (800 / 16), -1);
 
     display.setControlStyle2(label[7],
                              controlStyleCenterX | controlStyleCenterY | controlStyleFont2);
@@ -236,6 +257,11 @@ void cSongEditor::refreshSongPlayerSelectedSlot()
 
 void cSongEditor::refreshButtonsLabels()
 {
+    if (toolsPage || namingSection)
+    {
+        return;
+    }
+
     Sequencer::enSeqState seqState = sequencer.getSeqState();
     if (seqState == Sequencer::SEQ_STATE_STOP)
     {
@@ -400,8 +426,11 @@ void cSongEditor::showTempoValue()
         }
     }
 
-    display.setControlText2(label[7], globalTempoVal);
-    display.refreshControl(label[7]);
+    if (!toolsPage && !namingSection)
+    {
+        display.setControlText2(label[7], globalTempoVal);
+        display.refreshControl(label[7]);
+    }
 
     display.setControlShow(barControl);
     display.setControlValue(barControl,
@@ -427,4 +456,170 @@ void cSongEditor::hideIcon()
 
     // display.setControlValue(songPlayerControl, selectedPattern);
     display.refreshControl(songPlayerControl);
+}
+
+//==============================================================================================================
+// Twisted song tools
+//==============================================================================================================
+
+void cSongEditor::refreshTitle()
+{
+    int16_t loopStart = newFileManager.getSongLoopStart();
+    int16_t loopEnd = newFileManager.getSongLoopEnd();
+
+    if (loopMode == SongLoopMode::section && loopStart >= 0)
+    {
+        const char* name = newFileManager.getTwistedSong()->getSectionNameForPos(loopStart);
+        if (name[0] != 0)
+        {
+            snprintf(titleText, sizeof(titleText), "Song   LOOP: %s", name);
+        }
+        else
+        {
+            snprintf(titleText, sizeof(titleText), "Song   LOOP: %d-%d", loopStart + 1, loopEnd + 1);
+        }
+    }
+    else if (loopMode == SongLoopMode::selection && loopStart >= 0)
+    {
+        snprintf(titleText, sizeof(titleText), "Song   LOOP: %d-%d", loopStart + 1, loopEnd + 1);
+    }
+    else if (toolsPage)
+    {
+        snprintf(titleText, sizeof(titleText), "Song Tools");
+    }
+    else
+    {
+        snprintf(titleText, sizeof(titleText), "Song");
+    }
+
+    titleBar->setTitle(titleText);
+}
+
+void cSongEditor::refreshSongMarks()
+{
+    TwistedSong* ts = newFileManager.getTwistedSong();
+
+    memset(sectionStartFlags, 0, sizeof(sectionStartFlags));
+    for (uint8_t i = 0; i < ts->getSectionCount(); i++)
+    {
+        uint8_t start = ts->getSectionStart(i);
+        if (start < SONG_MAX)
+        {
+            sectionStartFlags[start] = 1;
+        }
+    }
+
+    songPlayerData.sectionStarts = sectionStartFlags;
+    songPlayerData.loopStart = (loopMode != SongLoopMode::off) ? newFileManager.getSongLoopStart() : -1;
+    songPlayerData.loopEnd = (loopMode != SongLoopMode::off) ? newFileManager.getSongLoopEnd() : -1;
+    songPlayerData.queuedPos = newFileManager.getQueuedSongJump();
+}
+
+void cSongEditor::refreshToolsLabels()
+{
+    static const char* const kText1[8] = { "Section", "Section", "Loop",  "Loop",
+                                           "Clone",   "Make",    "Back",  "Unlink" };
+    static const char* const kText2[8] = { "Name",     "Remove",    "Section", "Selection",
+                                           "In Place", "Variation", "",        "Variation" };
+    // the ones that change the song need edit (REC) mode
+    static const bool kNeedsEdit[8] = { true, true, false, false, true, true, false, true };
+
+    display.setControlPosition(label[5], (800 / 8) * 5 + (800 / 16), -1);
+    display.setControlPosition(label[6], (800 / 8) * 6 + (800 / 16), -1);
+    display.setRemoveControlStyle(label[5], controlStyleShowBitmap);
+    display.setControlData(label[5], &labelDataRed);
+    display.setControlStyle2(label[7],
+                             controlStyleCenterX | controlStyleCenterY | controlStyleFont3);
+
+    for (uint8_t i = 0; i < 8; i++)
+    {
+        display.setControlText(label[i], kText1[i]);
+        display.setControlText2(label[i], kText2[i]);
+        display.setControlValue(label[i], kText2[i][0] != 0 ? 1 : 0);
+
+        bool active = !kNeedsEdit[i] || editMode;
+
+        display.setControlColors(label[i],
+                                 active ? display.getTheme().activeButtonLabelsColors
+                                        : display.getTheme().inactiveButtonLabelsColors);
+        display.setControlShow(label[i]);
+        display.refreshControl(label[i]);
+    }
+
+    // show which loop is on
+    display.setControlText2(label[2], loopMode == SongLoopMode::section ? "Section ON" : "Section");
+    display.setControlText2(label[3],
+                            loopMode == SongLoopMode::selection ? "Selection ON" : "Selection");
+    display.refreshControl(label[2]);
+    display.refreshControl(label[3]);
+
+    display.synchronizeRefresh();
+}
+
+void cSongEditor::showMessage(const char* line1, const char* line2)
+{
+    strncpy(messageLine1, line1 != nullptr ? line1 : "", sizeof(messageLine1) - 1);
+    messageLine1[sizeof(messageLine1) - 1] = 0;
+
+    if (line2 != nullptr)
+    {
+        strncpy(messageLine2, line2, sizeof(messageLine2) - 1);
+        messageLine2[sizeof(messageLine2) - 1] = 0;
+    }
+
+    mtPopups.showInfoPopup(messageLine1, line2 != nullptr ? messageLine2 : nullptr);
+    messageVisible = true;
+    messageTimer = 0;
+}
+
+void cSongEditor::updateMessage()
+{
+    if (messageVisible && messageTimer > 1500)
+    {
+        messageVisible = false;
+        mtPopups.hideInfoPopup();
+        display.refreshControl(songPlayerControl);
+        display.synchronizeRefresh();
+    }
+}
+
+void cSongEditor::showSectionKeyboard()
+{
+    snprintf(titleText, sizeof(titleText), "Name Section at Slot %d", namingSectionPos + 1);
+    titleBar->show(true);
+    titleBar->setTitle(titleText);
+
+    display.setControlHide(songPlayerControl);
+    display.setControlHide(frameControl);
+    display.setControlHide(barControl);
+
+    display.setControlPosition(label[5], (800 / 8) * 5 + (800 / 16), -1);
+    display.setControlPosition(label[6], (800 / 8) * 6 + (800 / 16), -1);
+    display.setRemoveControlStyle(label[5], controlStyleShowBitmap);
+    display.setControlData(label[5], &labelDataRed);
+
+    for (uint8_t i = 0; i < 8; i++)
+    {
+        display.setControlValue(label[i], 0);
+        display.setControlText(label[i], "");
+        display.setControlText2(label[i], "");
+        display.setControlColors(label[i], display.getTheme().activeButtonLabelsColors);
+    }
+
+    display.setControlText(label[0], "Enter");
+    display.setControlText(label[6], "Cancel");
+    display.setControlText(label[7], "Save");
+
+    for (uint8_t i = 0; i < 8; i++)
+    {
+        display.refreshControl(label[i]);
+    }
+
+    display.setControlValue(bgLabel, 255);
+    display.refreshControl(bgLabel);
+
+    mtPopups.hideInfoPopup();
+    messageVisible = false;
+
+    display.synchronizeRefresh();
 }

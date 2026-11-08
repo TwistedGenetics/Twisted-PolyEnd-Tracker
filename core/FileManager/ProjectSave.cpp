@@ -526,6 +526,13 @@ void ProjectSave::saveProjectFinish()
 
     newFileManager.getPatternsMetadata()->copyPatternsMetadata(cWorkspacePatternsMetadataFilePath,
                                                                destFilePath);
+    //------------ twisted song (sections, linked variations)
+    snprintf(destFilePath,
+             pathSize,
+             cProjectsTwistedSongFileFormat,
+             newFileManager.getCurrentProjectPath(),
+             newFileManager.getCurrentProjectName());
+    newFileManager.getTwistedSong()->copyFile(cWorkspaceTwistedSongFilePath, destFilePath);
     //------------ synth patches
 
 #if FILEMANAGER_HANDLE_SYNTH == 1

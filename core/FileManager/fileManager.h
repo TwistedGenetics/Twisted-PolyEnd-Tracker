@@ -23,6 +23,7 @@
 #include "WorkspaceProjectSave.h"
 
 #include "PatternsMetadata.h"
+#include "TwistedSong.h"
 
 #ifdef FEATURE_SYNTH
 #define FILEMANAGER_HANDLE_SYNTH 1
@@ -169,6 +170,7 @@ class cFileManager
     FileSystem* getFileSystem() { return fileSystem; }
     Synth* getSynth() { return synth; }
     PatternsMetadata* getPatternsMetadata() { return &patternsMetadata; }
+    TwistedSong* getTwistedSong() { return &twistedSong; }
 
     void clearStatus()
     {
@@ -306,6 +308,20 @@ class cFileManager
     std::optional<int> getPatternPosInSong(uint8_t patternToSearch);
     void setSongPos(uint8_t pos);
     bool switchNextPatternInSong();
+
+    //------------------------------------------------- Twisted song mode
+    // song loop range (section / selection), -1 = off
+    void setSongLoop(int16_t start, int16_t end);
+    int16_t getSongLoopStart();
+    int16_t getSongLoopEnd();
+    // jump to this song position when the current pattern ends, -1 = none
+    void queueSongJump(int16_t pos);
+    int16_t getQueuedSongJump();
+    // linked variations
+    void onPatternFileWritten(uint8_t patternIdx);
+    void serviceLinkedVariations();
+    bool clonePatternFile(uint8_t srcPatternIdx, uint8_t destPatternIdx);
+    int findFreePatternIdx();
     void copySongTracks(char* currentProjectPath,
                         uint8_t srcPatternIdx,
                         uint8_t destPatternIdx,
@@ -459,6 +475,10 @@ class cFileManager
     int loadedPattern = -1;  // -1 for asserts
 
     PatternsMetadata patternsMetadata;
+    TwistedSong twistedSong;
+    bool variationSyncWriting = false;
+    void syncVariationEdits(uint8_t child);
+    void syncVariationChildren(uint8_t parent);
 
     bool stereoSampleMode = false;
     bool workspaceSaveSuspended = false;

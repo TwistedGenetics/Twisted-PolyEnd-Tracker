@@ -13,6 +13,9 @@
 #include "mtStructs.h"
 #include "util_math.h"
 
+#include <cr_section_macros.h>
+#include <string.h>
+
 cSongEditor songEditor;
 
 static cSongEditor* SE = &songEditor;
@@ -65,6 +68,29 @@ static void refreshDeleting();
 void playSongFromSelectedPattern();
 void playSongFromSelectedPattern_stop();
 
+// Twisted song tools
+static void functToolsSectionName();
+static void functToolsSectionRemove();
+static void functToolsLoopSection();
+static void functToolsLoopSelection();
+static void functToolsClone();
+static void functToolsVariation();
+static void functToolsBack();
+static void functToolsUnlink();
+
+static void functKeyboardLeft();
+static void functKeyboardRight();
+static void functKeyboardUp();
+static void functKeyboardDown();
+static void functKeyboardEnter();
+static void functKeyboardBackspace();
+static void functKeyboardCancel();
+static void functKeyboardSave();
+
+// text shown in the song list for each slot: section name, variation mark, pattern name
+static constexpr int kListTextLength = 48;
+__NOINIT(EXTERNAL_RAM) static char songListText[SONG_MAX][kListTextLength];
+
 void cSongEditor::update()
 {
     if (songPlayerRefreshTimer > 100)
@@ -75,11 +101,15 @@ void cSongEditor::update()
         Sequencer::enSeqState seqState = sequencer.getSeqState();
         if (seqState == Sequencer::SEQ_STATE_PLAY_SONG)
         {
+            // in a section loop the selection is where you want to go next, so it stays put
+            bool keepSelection = editMode || loopMode == SongLoopMode::section;
+
             if (lastSongListPos != mtProject.song.playlistPos ||
-                selectedSongPosition != mtProject.song.playlistPos)
+                (!keepSelection && selectedSongPosition != mtProject.song.playlistPos))
             {
                 lastSongListPos = mtProject.song.playlistPos;
-                if (!editMode)
+                refreshSongMarks();
+                if (!keepSelection)
                 {
                     selectedSongPosition = mtProject.song.playlistPos;
                     refreshPatternsList();
@@ -136,6 +166,7 @@ void cSongEditor::update()
     tapTempo_update();
     refreshCopyPasting();
     refreshDeleting();
+    updateMessage();
 }
 
 void cSongEditor::start(uint32_t options)
@@ -148,6 +179,7 @@ void cSongEditor::start(uint32_t options)
     exitOnButtonRelease = 0;
 
     newFileManager.updateActualPatternBitmask();
+    namingSection = false;
     readSong();
     handleEntryIcon();
 
@@ -171,11 +203,27 @@ void cSongEditor::start(uint32_t options)
     showDefaultScreen();
     setDefaultScreenFunct();
 
+    if (toolsPage)
+    {
+        showToolsPage();
+    }
+
     lightUpPadBoard();
 }
 
 void cSongEditor::stop()
 {
+    if (namingSection)
+    {
+        namingSection = false;
+        keyboardManager.deactivateKeyboard();
+    }
+    if (messageVisible)
+    {
+        messageVisible = false;
+        mtPopups.hideInfoPopup();
+    }
+
     sequencer.stopManualNotes();
     cleanPatternsListResources();
 
@@ -330,6 +378,13 @@ void cbkSongPlaybackModeToggle()
 
 void playSongFromSelectedPattern()
 {
+    // start clean: nothing queued, a section loop follows where playback starts
+    newFileManager.queueSongJump(-1);
+    if (SE->loopMode == cSongEditor::SongLoopMode::section)
+    {
+        SE->applySectionLoopForSelection();
+    }
+
     sequencer.playSongFromPosition(SE->selectedSongPosition);
     SE->showIcon(iconPlay, SE->selectedSongPosition);
 
@@ -484,6 +539,10 @@ static void functAddSlot()
 
     SE->songLength++;
 
+    // section dividers move with the music
+    newFileManager.getTwistedSong()->onSlotInserted(SE->selectedSongPosition + 1);
+    SE->clearSongLoop();
+
     SE->selectedPlace = 1;
     SE->activateLabelsBorder();
     SE->changeSongPositionSelection(1);
@@ -519,12 +578,17 @@ static void functDeleteSlot()
 
     mtProject.song.playlist[SE->songLength] = 0;
 
+    uint8_t deletedPos = SE->selectedSongPosition;
+
     for (int i = SE->selectedSongPosition; i < SE->songLength; i++)
     {
         mtProject.song.playlist[i] = mtProject.song.playlist[i + 1];
     }
 
     SE->songLength--;
+
+    newFileManager.getTwistedSong()->onSlotDeleted(deletedPos, SE->songLength);
+    SE->clearSongLoop();
 
     SE->selectedPlace = 1;
     SE->activateLabelsBorder();
@@ -916,9 +980,11 @@ void cSongEditor::refreshSongPlayer(uint8_t source)
 
 void cSongEditor::changeSongPositionSelection(int16_t value)
 {
+    bool jamming = !sequencer.isStop() && loopMode == SongLoopMode::section;
+
     if (SE->editMode == 0)
     {
-        if (!sequencer.isStop())
+        if (!sequencer.isStop() && !jamming)
         {
             return;
         }
@@ -933,6 +999,12 @@ void cSongEditor::changeSongPositionSelection(int16_t value)
     else
         selectedSongPosition += value;
 
+    if (jamming)
+    {
+        // pick a slot in another section: go there when the current pattern ends
+        applySectionLoopForSelection();
+    }
+
     refreshPatternsList();
     refreshSongPlayerSelectedSlot();
 }
@@ -941,6 +1013,21 @@ void cSongEditor::changeSongPositionSelection(int16_t value)
 //==============================================================================================
 void cSongEditor::refreshEditMode()
 {
+    if (namingSection)
+    {
+        return;
+    }
+
+    if (toolsPage)
+    {
+        refreshToolsLabels();
+        refreshPatternsList();
+        activateLabelsBorder();
+        display.refreshControl(songPlayerControl);
+        display.synchronizeRefresh();
+        return;
+    }
+
     for (uint8_t i = 2; i < 6; i++)
     {
         display.setControlColors(label[i],
@@ -1016,6 +1103,11 @@ void cSongEditor::readSong()
     songPlayerData.isListActive = 1;
     songPlayerData.isEditMode = &editMode;
 
+    songPlayerData.loopStart = -1;
+    songPlayerData.loopEnd = -1;
+    songPlayerData.queuedPos = -1;
+    refreshSongMarks();
+
     display.setControlData(songPlayerControl, &songPlayerData);
 }
 
@@ -1032,22 +1124,47 @@ void cSongEditor::refreshPatternsList()
 
     patternNames = new char*[songLength];
 
+    TwistedSong* ts = newFileManager.getTwistedSong();
+
     for (int slot = 0; slot < songLength; slot++)
     {
-        char* patternName =
-          newFileManager.getPatternsMetadata()->getPatternName(mtProject.song.playlist[slot]);
+        uint8_t pattern = mtProject.song.playlist[slot];
+        char* patternName = newFileManager.getPatternsMetadata()->getPatternName(pattern);
 
-        if (patternName == nullptr || patternName[0] == 0)
+        if (patternName == nullptr)
         {
-            patternNames[slot] = (char*)kEmptyPatternNameText;
+            patternName = (char*)kEmptyPatternNameText;
+        }
+
+        int section = ts->findSectionStartingAt(slot);
+        bool isVariation = ts->getParent(pattern) != TwistedSong::kNoParent;
+
+        if (section < 0 && !isVariation)
+        {
+            patternNames[slot] = patternName;
+            continue;
+        }
+
+        // "DROP: ~AMEN CHOP" - section name where a section starts, ~ for a linked variation
+        char* text = songListText[slot];
+        if (section >= 0)
+        {
+            snprintf(text,
+                     kListTextLength,
+                     "%s: %s%s",
+                     ts->getSectionName(section),
+                     isVariation ? "~" : "",
+                     patternName);
         }
         else
         {
-            patternNames[slot] = patternName;
+            snprintf(text, kListTextLength, "~%s", patternName);
         }
+        patternNames[slot] = text;
     }
 
     patternsList.names = patternNames;
+    refreshSongMarks();
 }
 
 void cSongEditor::cleanPatternsListResources()
@@ -1134,6 +1251,12 @@ void cSongEditor::changeSelectedPlayListPattern(int value)
 
 static void functPads(uint8_t pad, uint8_t state, int16_t)
 {
+    if (SE->namingSection)
+    {
+        SE->keyboardManager.onPadChange(pad, state);
+        return;
+    }
+
     if (SE->isBusy)
     {
         return;
@@ -1638,7 +1761,25 @@ static void functInsert()
             case 0: SE->walkOnSongPlayer(playerHome); break;
             case 1: SE->changeSongPositionSelection(-300); break;
         }
+        return;
     }
+
+#ifndef TRACKER_MINI
+    if (SE->isBusy)
+    {
+        return;
+    }
+
+    // INSERT opens / closes the song tools page
+    if (SE->toolsPage)
+    {
+        SE->hideToolsPage();
+    }
+    else
+    {
+        SE->showToolsPage();
+    }
+#endif
 }
 
 static void functDelete()
@@ -1709,4 +1850,466 @@ static void functMenu(uint8_t state)
     {
         mtMenuPopup.hideModulePopup(SE);
     }
+}
+
+//======================================================================================================================
+// Twisted song tools - sections, loops, clone in place, linked variations
+//======================================================================================================================
+
+void cSongEditor::showToolsPage()
+{
+    toolsPage = true;
+    setToolsScreenFunct();
+    refreshToolsLabels();
+    refreshTitle();
+}
+
+void cSongEditor::hideToolsPage()
+{
+    toolsPage = false;
+
+    for (uint8_t i = 0; i < 8; i++)
+    {
+        display.setControlColors(label[i], display.getTheme().activeButtonLabelsColors);
+    }
+    playButtonsState = 0xFF; // force the play labels to be redrawn
+
+    showDefaultScreen();
+    setDefaultScreenFunct();
+    refreshEditMode();
+    refreshTempoField();
+}
+
+void cSongEditor::setToolsScreenFunct()
+{
+    ip->clearButtonsRange(interfaceButton0, interfaceButton7);
+
+    ip->setButtonObj(interfaceButton0, buttonPress, functToolsSectionName);
+    ip->setButtonObj(interfaceButton1, buttonPress, functToolsSectionRemove);
+    ip->setButtonObj(interfaceButton2, buttonPress, functToolsLoopSection);
+    ip->setButtonObj(interfaceButton3, buttonPress, functToolsLoopSelection);
+    ip->setButtonObj(interfaceButton4, buttonPress, functToolsClone);
+    ip->setButtonObj(interfaceButton5, buttonPress, functToolsVariation);
+    ip->setButtonObj(interfaceButton6, buttonPress, functToolsBack);
+    ip->setButtonObj(interfaceButton7, buttonPress, functToolsUnlink);
+}
+
+void cSongEditor::clearSongLoop()
+{
+    loopMode = SongLoopMode::off;
+    newFileManager.setSongLoop(-1, -1);
+    newFileManager.queueSongJump(-1);
+    refreshSongMarks();
+    if (toolsPage)
+    {
+        refreshToolsLabels();
+    }
+    refreshTitle();
+}
+
+// loop the section of the selected slot; if playback is somewhere else, go there next
+void cSongEditor::applySectionLoopForSelection()
+{
+    uint8_t start, end;
+    newFileManager.getTwistedSong()->getSectionRange(selectedSongPosition, songLength, &start, &end);
+    newFileManager.setSongLoop(start, end);
+
+    uint8_t playing = mtProject.song.playlistPos;
+    bool isPlayingSong = sequencer.getSeqState() == Sequencer::SEQ_STATE_PLAY_SONG;
+
+    if (isPlayingSong && (playing < start || playing > end))
+    {
+        newFileManager.queueSongJump(selectedSongPosition);
+    }
+    else
+    {
+        newFileManager.queueSongJump(-1);
+    }
+
+    refreshSongMarks();
+    refreshTitle();
+    display.refreshControl(songPlayerControl);
+}
+
+void cSongEditor::toggleLoopSection()
+{
+    if (loopMode == SongLoopMode::section)
+    {
+        clearSongLoop();
+        showMessage("Loop Section off", nullptr);
+    }
+    else
+    {
+        loopMode = SongLoopMode::section;
+        applySectionLoopForSelection();
+
+        const char* name =
+          newFileManager.getTwistedSong()->getSectionNameForPos(selectedSongPosition);
+        char line2[40];
+        snprintf(line2,
+                 sizeof(line2),
+                 "Slots %d-%d",
+                 newFileManager.getSongLoopStart() + 1,
+                 newFileManager.getSongLoopEnd() + 1);
+        showMessage(name[0] != 0 ? name : "Loop Section on", line2);
+    }
+
+    if (toolsPage)
+    {
+        refreshToolsLabels();
+    }
+}
+
+void cSongEditor::toggleLoopSelection()
+{
+    if (loopMode == SongLoopMode::selection)
+    {
+        clearSongLoop();
+        showMessage("Loop Selection off", nullptr);
+    }
+    else
+    {
+        int16_t start = selectedSongPosition;
+        int16_t end = selectedSongPosition;
+
+        // the highlighted slots on the left, or just the selected slot in the list
+        if (selectedPlace == 0 && songPlayerData.selection.isActive &&
+            songPlayerData.selection.patternSelectionLength > 0)
+        {
+            start = songPlayerData.selection.startSongPosition;
+            end = start + songPlayerData.selection.patternSelectionLength - 1;
+        }
+
+        if (end > songLength - 1)
+        {
+            end = songLength - 1;
+        }
+
+        loopMode = SongLoopMode::selection;
+        newFileManager.setSongLoop(start, end);
+
+        uint8_t playing = mtProject.song.playlistPos;
+        if (sequencer.getSeqState() == Sequencer::SEQ_STATE_PLAY_SONG &&
+            (playing < start || playing > end))
+        {
+            newFileManager.queueSongJump(start);
+        }
+        else
+        {
+            newFileManager.queueSongJump(-1);
+        }
+
+        char line2[40];
+        snprintf(line2, sizeof(line2), "Slots %d-%d", start + 1, end + 1);
+        showMessage("Loop Selection on", line2);
+    }
+
+    refreshSongMarks();
+    refreshTitle();
+    if (toolsPage)
+    {
+        refreshToolsLabels();
+    }
+    display.refreshControl(songPlayerControl);
+}
+
+void cSongEditor::cloneSelectedSlot(bool linked)
+{
+    uint8_t slot = selectedSongPosition;
+    uint8_t srcPattern = mtProject.song.playlist[slot];
+
+    if (srcPattern == 0)
+    {
+        return;
+    }
+
+    int destPattern = newFileManager.findFreePatternIdx();
+    if (destPattern < 0)
+    {
+        showMessage("No free pattern left", nullptr);
+        return;
+    }
+
+    isBusy = 1;
+
+    if (!newFileManager.clonePatternFile(srcPattern, (uint8_t)destPattern))
+    {
+        isBusy = 0;
+        showMessage("Could not copy the pattern", nullptr);
+        return;
+    }
+
+    if (linked)
+    {
+        newFileManager.getTwistedSong()->link((uint8_t)destPattern, srcPattern);
+    }
+
+    mtProject.song.playlist[slot] = (uint8_t)destPattern;
+
+    if (slot == lastSongListPos)
+    {
+        switchToNewPattern();
+    }
+
+    newFileManager.setProjectStructChanged();
+
+    isBusy = 0;
+
+    refreshPatternsList();
+    refreshSongPlayerSelectedSlot();
+    patternEditor.changeActualPattern(0);
+
+    char line2[40];
+    snprintf(line2, sizeof(line2), "Slot %d now plays pattern %d", slot + 1, destPattern);
+    showMessage(linked ? "Linked variation made" : "Cloned in place", line2);
+}
+
+void cSongEditor::unlinkSelectedSlot()
+{
+    uint8_t pattern = mtProject.song.playlist[selectedSongPosition];
+    TwistedSong* ts = newFileManager.getTwistedSong();
+
+    if (ts->getParent(pattern) == TwistedSong::kNoParent)
+    {
+        showMessage("Not a linked variation", nullptr);
+        return;
+    }
+
+    char line2[40];
+    snprintf(line2, sizeof(line2), "Pattern %d is on its own now", pattern);
+
+    ts->unlink(pattern);
+    refreshPatternsList();
+    refreshSongPlayerControl();
+
+    showMessage("Variation unlinked", line2);
+}
+
+void cSongEditor::removeSectionAtSelection()
+{
+    TwistedSong* ts = newFileManager.getTwistedSong();
+    uint8_t pos = selectedSongPosition;
+
+    // remove the divider of the section the selection is in
+    int section = -1;
+    for (uint8_t i = 0; i < ts->getSectionCount(); i++)
+    {
+        if (ts->getSectionStart(i) <= pos)
+        {
+            section = i;
+        }
+    }
+
+    if (section < 0)
+    {
+        showMessage("No section here", nullptr);
+        return;
+    }
+
+    ts->removeSection(ts->getSectionStart(section));
+
+    if (loopMode == SongLoopMode::section)
+    {
+        applySectionLoopForSelection();
+    }
+
+    refreshPatternsList();
+    refreshSongPlayerControl();
+    showMessage("Section removed", nullptr);
+}
+
+//------------------------------------------------------------------------------------- naming a section
+
+void cSongEditor::startSectionNaming()
+{
+    TwistedSong* ts = newFileManager.getTwistedSong();
+
+    namingSection = true;
+    namingSectionPos = selectedSongPosition;
+
+    int section = ts->findSectionStartingAt(namingSectionPos);
+    keyboardManager.fillName(section >= 0 ? ts->getSectionName(section) : "");
+    keyboardManager.activateKeyboard(TwistedSong::kSectionNameLength);
+
+    showSectionKeyboard();
+
+    ip->clearButtonsRange(interfaceButton0, interfaceButton7);
+    ip->clearAllPots();
+
+    ip->setButtonObj(interfaceButtonLeft, buttonPress, functKeyboardLeft);
+    ip->setButtonObj(interfaceButtonRight, buttonPress, functKeyboardRight);
+    ip->setButtonObj(interfaceButtonUp, buttonPress, functKeyboardUp);
+    ip->setButtonObj(interfaceButtonDown, buttonPress, functKeyboardDown);
+    ip->setButtonObj(interfaceButtonDelete, buttonPress, functKeyboardBackspace);
+    ip->setButtonObj(interfaceButtonInsert, buttonPress, functKeyboardEnter);
+
+    ip->clearButton(interfaceButtonCopy);
+
+    ip->setButtonObj(interfaceButton0, buttonPress, functKeyboardEnter);
+    ip->setButtonObj(interfaceButton6, buttonPress, functKeyboardCancel);
+    ip->setButtonObj(interfaceButton7, buttonPress, functKeyboardSave);
+}
+
+void cSongEditor::finishSectionNaming(bool save)
+{
+    if (!namingSection)
+    {
+        return;
+    }
+
+    if (save)
+    {
+        char* name = keyboardManager.getName();
+        TwistedSong* ts = newFileManager.getTwistedSong();
+
+        if (name == nullptr || name[0] == 0)
+        {
+            ts->removeSection(namingSectionPos);
+        }
+        else if (!ts->setSection(namingSectionPos, name))
+        {
+            showMessage("Too many sections", nullptr);
+        }
+    }
+
+    namingSection = false;
+    keyboardManager.deactivateKeyboard();
+
+    display.setControlValue(bgLabel, 191);
+    display.setControlShow(songPlayerControl);
+
+    if (loopMode == SongLoopMode::section)
+    {
+        applySectionLoopForSelection();
+    }
+
+    refreshPatternsList();
+    showDefaultScreen();
+    setDefaultScreenFunct();
+    showToolsPage();
+    activateLabelsBorder();
+}
+
+//------------------------------------------------------------------------------------- button handlers
+
+static bool needsEditMode()
+{
+    if (!SE->editMode)
+    {
+        SE->showMessage("Press REC to edit the song", nullptr);
+        return true;
+    }
+    return false;
+}
+
+static void functToolsSectionName()
+{
+    if (SE->isBusy || needsEditMode())
+    {
+        return;
+    }
+    SE->startSectionNaming();
+}
+
+static void functToolsSectionRemove()
+{
+    if (SE->isBusy || needsEditMode())
+    {
+        return;
+    }
+    SE->removeSectionAtSelection();
+}
+
+static void functToolsLoopSection()
+{
+    if (SE->isBusy)
+    {
+        return;
+    }
+    SE->toggleLoopSection();
+}
+
+static void functToolsLoopSelection()
+{
+    if (SE->isBusy)
+    {
+        return;
+    }
+    SE->toggleLoopSelection();
+}
+
+static void functToolsClone()
+{
+    if (SE->isBusy || needsEditMode())
+    {
+        return;
+    }
+    SE->cloneSelectedSlot(false);
+}
+
+static void functToolsVariation()
+{
+    if (SE->isBusy || needsEditMode())
+    {
+        return;
+    }
+    SE->cloneSelectedSlot(true);
+}
+
+static void functToolsBack()
+{
+    if (SE->isBusy)
+    {
+        return;
+    }
+    SE->hideToolsPage();
+}
+
+static void functToolsUnlink()
+{
+    if (SE->isBusy || needsEditMode())
+    {
+        return;
+    }
+    SE->unlinkSelectedSlot();
+}
+
+static void functKeyboardLeft()
+{
+    SE->keyboardManager.makeMove('a');
+}
+
+static void functKeyboardRight()
+{
+    SE->keyboardManager.makeMove('d');
+}
+
+static void functKeyboardUp()
+{
+    SE->keyboardManager.makeMove('w');
+}
+
+static void functKeyboardDown()
+{
+    SE->keyboardManager.makeMove('s');
+}
+
+static void functKeyboardEnter()
+{
+    SE->keyboardManager.confirmKey();
+}
+
+static void functKeyboardBackspace()
+{
+    SE->keyboardManager.makeBackspace();
+}
+
+static void functKeyboardCancel()
+{
+    SE->finishSectionNaming(false);
+}
+
+static void functKeyboardSave()
+{
+    SE->finishSectionNaming(true);
 }

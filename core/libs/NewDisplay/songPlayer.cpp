@@ -209,6 +209,7 @@ void cSongPlayer::update3()
         (controlData->midiPatternsBitmask != nullptr))
     {
         fillBlocks();
+        drawSongMarks();
     }
 
     drawProgressLine();
@@ -758,6 +759,58 @@ void cSongPlayer::fillBlocks()
     API_END();
 
     drawSelection();
+}
+
+// section dividers, loop range and queued jump, drawn over the left edge of the blocks
+void cSongPlayer::drawSongMarks()
+{
+    int rows = std::max(controlData->songLength, (uint8_t)textListPos) - (uint8_t)textListPos;
+    rows = std::min(rows, MAX_PATTERNS_VISIBLE);
+
+    const uint16_t gridLeft = posX + BLOCKS_MARGIN;
+    const uint16_t gridRight = gridLeft + (blockWidth + BLOCK_SPACING) * kAllTracks - BLOCK_SPACING;
+
+    if (controlData->sectionStarts != nullptr)
+    {
+        API_COLOR(colors[5]);
+        API_LINE_WIDTH(40);
+        API_BEGIN(LINES);
+        for (int row = 0; row < rows; row++)
+        {
+            int pos = textListPos + row;
+            if (pos > 0 && controlData->sectionStarts[pos])
+            {
+                uint16_t localY = posY + row * (BLOCK_HEIGHT + BLOCK_SPACING) + 64 - 2;
+                API_VERTEX2F(gridLeft, localY);
+                API_VERTEX2F(gridRight, localY);
+            }
+        }
+        API_END();
+    }
+
+    API_LINE_WIDTH(16);
+    API_BEGIN(RECTS);
+    for (int row = 0; row < rows; row++)
+    {
+        int pos = textListPos + row;
+        uint16_t localY = posY + row * (BLOCK_HEIGHT + BLOCK_SPACING) + 64;
+        bool inLoop = controlData->loopStart >= 0 && pos >= controlData->loopStart &&
+                      pos <= controlData->loopEnd;
+
+        if (pos == controlData->queuedPos)
+        {
+            API_COLOR(colors[9]);
+            API_VERTEX2F(posX + 1, localY);
+            API_VERTEX2F(posX + 3, localY + BLOCK_HEIGHT);
+        }
+        else if (inLoop)
+        {
+            API_COLOR(colors[5]);
+            API_VERTEX2F(posX + 1, localY);
+            API_VERTEX2F(posX + 3, localY + BLOCK_HEIGHT);
+        }
+    }
+    API_END();
 }
 
 void cSongPlayer::drawProgressLine()

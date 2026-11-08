@@ -1,4 +1,5 @@
 #include "fileManagerDefs.h"
+#include "config.h"
 #include "mtStructs.h"
 
 #include "core/interfacePopups.h"
@@ -12,11 +13,67 @@ __NOINIT(EXTERNAL_RAM) Sequencer::strPattern songTrackCopy[2];
 
 void setPatternBitmask(int patternIdx, int trackIdx, bool value);
 
+//------------------------------------------------------------------------------------------
+// Twisted song mode: loop ranges (section / selection) and queued jumps.
+// These are read from the sequencer interrupt, so they're kept as plain volatile values.
+//------------------------------------------------------------------------------------------
+static volatile int16_t songLoopStart = -1;
+static volatile int16_t songLoopEnd = -1;
+static volatile int16_t songQueuedJump = -1;
+static volatile int16_t songLatchedNext = -1; // next position chosen when the next pattern was preloaded
+
+static inline bool isSongPosValid(strSong* song, int16_t pos)
+{
+    return pos >= 0 && pos < SONG_MAX && song->playlist[pos] != PLAYLIST_EMPTY_SLOT;
+}
+
+AUDIO_CORE_RAM static int16_t computeNextSongPos(bool* songEnded)
+{
+    strSong* song = &mtProject.song;
+    int16_t pos = song->playlistPos;
+    *songEnded = false;
+
+    // exporting the song: always play it straight through once
+    bool rendering = sequencer.isRenderMode();
+
+    int16_t queued = rendering ? -1 : songQueuedJump;
+    if (isSongPosValid(song, queued))
+    {
+        return queued;
+    }
+
+    int16_t loopStart = rendering ? -1 : songLoopStart;
+    int16_t loopEnd = rendering ? -1 : songLoopEnd;
+    bool loopActive = isSongPosValid(song, loopStart) && isSongPosValid(song, loopEnd) &&
+                      loopStart <= loopEnd;
+
+    if (loopActive && pos == loopEnd)
+    {
+        return loopStart;
+    }
+
+    if (pos + 1 < SONG_MAX && song->playlist[pos + 1] != PLAYLIST_EMPTY_SLOT)
+    {
+        return pos + 1;
+    }
+
+    if (loopActive)
+    {
+        return loopStart;
+    }
+
+    *songEnded = true;
+    return 0;
+}
+
 AUDIO_CORE_RAM uint8_t cFileManager::getNextSongPattern()
 {
     strSong* song = &mtProject.song;
-    return song->playlist[song->playlistPos + 1] > 0 ? song->playlist[song->playlistPos + 1]
-                                                     : song->playlist[0];
+    bool songEnded;
+    int16_t next = computeNextSongPos(&songEnded);
+    songLatchedNext = next;
+
+    return song->playlist[next] > 0 ? song->playlist[next] : song->playlist[0];
 }
 uint8_t cFileManager::getSongPattern(uint8_t pos)
 {
@@ -45,22 +102,75 @@ void cFileManager::setSongPos(uint8_t pos)
 {
     strSong* song = &mtProject.song;
     song->playlistPos = pos;
+    songLatchedNext = -1;
 }
 
 bool cFileManager::switchNextPatternInSong()
 {
     strSong* song = &mtProject.song;
-    if (song->playlist[++(song->playlistPos)] != PLAYLIST_EMPTY_SLOT)
+    bool songEnded = false;
+    int16_t next = songLatchedNext;
+
+    if (isSongPosValid(song, next))
     {
-        return 1;
+        // the pattern for this position is already loaded - stay in step with it
+        int16_t pos = song->playlistPos;
+        bool rendering = sequencer.isRenderMode();
+        songEnded = (rendering || (songQueuedJump < 0 && songLoopStart < 0)) && next == 0 &&
+                    !(pos + 1 < SONG_MAX && song->playlist[pos + 1] != PLAYLIST_EMPTY_SLOT);
     }
     else
     {
-        song->playlistPos = 0;
-        return 0;
+        next = computeNextSongPos(&songEnded);
     }
 
-    return 0;
+    songLatchedNext = -1;
+
+    if (songQueuedJump == next)
+    {
+        songQueuedJump = -1;
+    }
+
+    song->playlistPos = (uint8_t)next;
+    return !songEnded;
+}
+
+void cFileManager::setSongLoop(int16_t start, int16_t end)
+{
+    if (start < 0 || end < 0 || start >= SONG_MAX || end >= SONG_MAX || start > end)
+    {
+        start = -1;
+        end = -1;
+    }
+
+    DISABLE_GLOBAL_INTERRUPTS();
+    songLoopStart = start;
+    songLoopEnd = end;
+    ENABLE_GLOBAL_INTERRUPTS();
+}
+
+int16_t cFileManager::getSongLoopStart()
+{
+    return songLoopStart;
+}
+
+int16_t cFileManager::getSongLoopEnd()
+{
+    return songLoopEnd;
+}
+
+void cFileManager::queueSongJump(int16_t pos)
+{
+    if (pos >= SONG_MAX)
+    {
+        pos = -1;
+    }
+    songQueuedJump = pos;
+}
+
+int16_t cFileManager::getQueuedSongJump()
+{
+    return songQueuedJump;
 }
 
 void cFileManager::copySongTracks(char* currentProjectPath,
@@ -153,6 +263,7 @@ void cFileManager::copySongTracks(char* currentProjectPath,
     }
 
     writePatternFile(currentPath, destPattern);
+    onPatternFileWritten(destPaternIdx);
 }
 
 void cFileManager::deleteTracks(char* currentProjectPath,
@@ -186,6 +297,7 @@ void cFileManager::deleteTracks(char* currentProjectPath,
         }
 
         writePatternFile(currentPath, srcPattern);
+        onPatternFileWritten(srcPatternIdx);
     }
 }
 

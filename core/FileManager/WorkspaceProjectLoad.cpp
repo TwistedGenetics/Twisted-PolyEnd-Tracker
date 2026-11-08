@@ -165,6 +165,7 @@ void WorkspaceProjectLoad::loadProjectFromWorkspaceFinish()
     newFileManager.startAudioEngine();
 
     newFileManager.getPatternsMetadata()->loadPatternsMetadata();
+    newFileManager.getTwistedSong()->load();
 
 #if FILEMANAGER_HANDLE_SYNTH == 1
     newFileManager.getSynth()->updateToSettings(mtProject.values, true);

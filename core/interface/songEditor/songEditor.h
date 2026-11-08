@@ -154,6 +154,41 @@ class cSongEditor : public ModuleBase
     int16_t lastSongListPos = -1;
     void lightUpPadBoard();
 
+    //--------------------------------------------------------------
+    // Twisted song tools (INSERT opens the page)
+    enum class SongLoopMode : uint8_t
+    {
+        off,
+        section,
+        selection,
+    };
+
+    bool toolsPage = false;
+    bool namingSection = false;
+    uint8_t namingSectionPos = 0;
+    SongLoopMode loopMode = SongLoopMode::off;
+
+    void showToolsPage();
+    void hideToolsPage();
+    void refreshToolsLabels();
+    void setToolsScreenFunct();
+    void refreshTitle();
+    void refreshSongMarks();
+    void showMessage(const char* line1, const char* line2);
+    void updateMessage();
+
+    void startSectionNaming();
+    void finishSectionNaming(bool save);
+    void showSectionKeyboard();
+
+    void toggleLoopSection();
+    void toggleLoopSelection();
+    void applySectionLoopForSelection();
+    void clearSongLoop();
+    void cloneSelectedSlot(bool linked);
+    void unlinkSelectedSlot();
+    void removeSectionAtSelection();
+
   private:
     uint8_t tapTempoCount = 0;
     char tapText[12] = { 0 };
@@ -163,6 +198,12 @@ class cSongEditor : public ModuleBase
 
     char** patternNames = nullptr;
     static constexpr char kEmptyPatternNameText[2] = "";
+
+    char titleText[48] = { 0 };
+    char messageLine1[48] = { 0 };
+    char messageLine2[48] = { 0 };
+    bool messageVisible = false;
+    elapsedMillis messageTimer;
 };
 
 extern cSongEditor songEditor;

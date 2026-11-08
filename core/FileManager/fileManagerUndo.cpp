@@ -178,6 +178,7 @@ void cFileManager::undoSongPattern()
     snprintf(filePath, PATCH_SIZE, "Workspace/patterns/pattern_%02d.mtp", bufferedPatternNumber);
 
     writePatternFile(filePath, &undoSongBuffer[undoIndex]);
+    onPatternFileWritten(bufferedPatternNumber);
     if (updatePatternBitmask(bufferedPatternNumber, &undoSongBuffer[undoIndex]))
     {
         setProjectStructChanged();

@@ -70,6 +70,12 @@ typedef struct
     uint8_t normalTracksNamesBuffLen;
     uint8_t midiTracksNamesBuffLen;
 
+    // Twisted song mode marks (sections, loop range, queued jump)
+    uint8_t* sectionStarts; // SONG_MAX flags, 1 = a section starts at this slot, may be nullptr
+    int16_t loopStart;      // -1 = no loop
+    int16_t loopEnd;
+    int16_t queuedPos; // -1 = nothing queued
+
 } player_data_t;
 
 //--------------------------------------------------------------------
@@ -102,6 +108,7 @@ class cSongPlayer : public cDisplayControl
     void drawIcon(int pos, int row, int x, int y, int h);
     void fillBlocks();
     void drawProgressLine();
+    void drawSongMarks();
     void calculateSelection(uint8_t pattern,
                             uint8_t track,
                             uint16_t x,

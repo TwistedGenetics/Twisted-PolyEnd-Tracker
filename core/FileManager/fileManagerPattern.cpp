@@ -151,6 +151,7 @@ void cFileManager::savePatternToWorkspace()
     if (saveStatus == fileTransferEnd)
     {
         report(" no blocking pattern save - success ", mtProject.values.actualPattern);
+        onPatternFileWritten(mtProject.values.actualPattern);
         clearPatternChanged(mtProject.values.actualPattern);
         sequencer.saveToFileDone();
 
@@ -249,6 +250,7 @@ bool cFileManager::saveWorkspacePatternNow(uint8_t index)
 
         if (status == true)
         {
+            onPatternFileWritten(index);
             report(" save pattern now - success ", mtProject.values.actualPattern);
         }
         else

@@ -52,6 +52,7 @@ void cFileManager::init(FileSystem* fileSystem, Synth* synth, bool stereoSampleM
 
     fileTransfer.init(fileSystem);
     patternsMetadata.init(fileSystem);
+    twistedSong.init(fileSystem);
     FileManagerOperation::init(fileSystem);
 
     this->stereoSampleMode = stereoSampleMode;
@@ -62,6 +63,7 @@ void cFileManager::update()
     if (currentOperation == fmNoOperation && !sequencer.isRenderMode())
     {
         autoSaveProjectToWorkspace();
+        serviceLinkedVariations();
 
         return;
     }
