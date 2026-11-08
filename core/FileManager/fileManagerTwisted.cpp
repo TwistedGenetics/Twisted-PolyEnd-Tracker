@@ -21,8 +21,16 @@ constexpr uint8_t kDirtySynced = 0x02; // written by a parent sync: only pass it
 
 uint8_t variationDirty[PATTERN_INDEX_MAX + 1];
 
-__NOINIT(EXTERNAL_RAM) Sequencer::strPattern variationParentBuffer;
-__NOINIT(EXTERNAL_RAM) Sequencer::strPattern variationChildBuffer;
+}
+
+// shares the song screen's track copy buffers (fileManagerSong.cpp) - both only run from the
+// main loop, never at the same time, and external RAM has no room for two more patterns
+extern Sequencer::strPattern songTrackCopy[2];
+
+namespace
+{
+Sequencer::strPattern& variationParentBuffer = songTrackCopy[0];
+Sequencer::strPattern& variationChildBuffer = songTrackCopy[1];
 
 bool tracksEqual(Sequencer::strPattern::strTrack* a, Sequencer::strPattern::strTrack* b)
 {

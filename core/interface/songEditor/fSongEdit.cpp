@@ -87,9 +87,10 @@ static void functKeyboardBackspace();
 static void functKeyboardCancel();
 static void functKeyboardSave();
 
-// text shown in the song list for each slot: section name, variation mark, pattern name
+// text shown in the song list for slots with a section or a variation:
+// "DROP: ~AMEN CHOP", allocated together with the list of names
 static constexpr int kListTextLength = 48;
-__NOINIT(EXTERNAL_RAM) static char songListText[SONG_MAX][kListTextLength];
+static char* songListText = nullptr;
 
 void cSongEditor::update()
 {
@@ -1126,6 +1127,27 @@ void cSongEditor::refreshPatternsList()
 
     TwistedSong* ts = newFileManager.getTwistedSong();
 
+    if (songListText != nullptr)
+    {
+        delete[] songListText;
+        songListText = nullptr;
+    }
+
+    int textCount = 0;
+    for (int slot = 0; slot < songLength; slot++)
+    {
+        if (ts->findSectionStartingAt(slot) >= 0 ||
+            ts->getParent(mtProject.song.playlist[slot]) != TwistedSong::kNoParent)
+        {
+            textCount++;
+        }
+    }
+    if (textCount > 0)
+    {
+        songListText = new char[textCount * kListTextLength];
+    }
+    int textIdx = 0;
+
     for (int slot = 0; slot < songLength; slot++)
     {
         uint8_t pattern = mtProject.song.playlist[slot];
@@ -1146,7 +1168,7 @@ void cSongEditor::refreshPatternsList()
         }
 
         // "DROP: ~AMEN CHOP" - section name where a section starts, ~ for a linked variation
-        char* text = songListText[slot];
+        char* text = &songListText[(textIdx++) * kListTextLength];
         if (section >= 0)
         {
             snprintf(text,
@@ -1173,6 +1195,12 @@ void cSongEditor::cleanPatternsListResources()
     {
         delete[] patternNames;
         patternNames = nullptr;
+    }
+
+    if (songListText != nullptr)
+    {
+        delete[] songListText;
+        songListText = nullptr;
     }
 }
 
