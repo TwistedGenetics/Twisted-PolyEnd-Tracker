@@ -51,17 +51,30 @@ jobs:
       - name: Check version configuration
         run: make version
 
+      - name: Work out the Twisted release version
+        run: |
+          # Releases are published from version tags and from every push to main.
+          # On main the release tag comes from the Tracker+ version in version.mk.
+          get() { sed -nE "s/^$1[[:space:]]*:=[[:space:]]*([0-9]+).*/\1/p" version.mk; }
+          PLUS_VER="$(get PLUS_VER_MAJOR).$(get PLUS_VER_MINOR).$(get PLUS_VER_PATCH)"
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "RELEASE_TAG=${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
+            echo "RELEASE_VER=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          elif [[ "${GITHUB_EVENT_NAME}" == "push" && "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            echo "RELEASE_TAG=v${PLUS_VER}" >> "$GITHUB_ENV"
+            echo "RELEASE_VER=${PLUS_VER}" >> "$GITHUB_ENV"
+          fi
+
       - name: Build Original Tracker, Tracker+, and Tracker Mini firmware
         run: |
           set -o pipefail
           POSTFIX_ARGS=""
-          if [[ "${{ github.ref }}" != refs/tags/v* ]]; then
+          if [[ -n "${RELEASE_VER}" ]]; then
+            # Twisted release builds: TrackerPlus_Twisted_1.0.0.ptf etc.
+            POSTFIX_ARGS="ORIGINAL_POSTFIX=Twisted_${RELEASE_VER} PLUS_POSTFIX=Twisted_${RELEASE_VER} MINI_POSTFIX=Twisted_${RELEASE_VER}"
+          else
             SHORT_SHA=$(git rev-parse --short=7 HEAD)
             POSTFIX_ARGS="ORIGINAL_POSTFIX=CE_${SHORT_SHA} PLUS_POSTFIX=CE_${SHORT_SHA} MINI_POSTFIX=CE_${SHORT_SHA}"
-          else
-            # Twisted release builds: TrackerPlus_Twisted_1.0.0.ptf etc.
-            TAG_VER="${GITHUB_REF_NAME#v}"
-            POSTFIX_ARGS="ORIGINAL_POSTFIX=Twisted_${TAG_VER} PLUS_POSTFIX=Twisted_${TAG_VER} MINI_POSTFIX=Twisted_${TAG_VER}"
           fi
           make all $POSTFIX_ARGS 2>&1 | tee build_output.log
 
@@ -201,16 +214,20 @@ jobs:
             }
 
       - name: Package .ptfx Effects for GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: env.RELEASE_TAG != ''
         run: |
           cd editor-fx-sdk/build
           zip -r ../../build/PolyendTracker_CE_Effects.zip Effects README.txt
 
-      - name: Publish GitHub Release on Version Tag
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Publish GitHub Release
+        if: env.RELEASE_TAG != ''
         uses: softprops/action-gh-release@v2
         with:
-          name: Twisted PolyEnd Tracker ${{ github.ref_name }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          overwrite_files: true
+          name: Twisted PolyEnd Tracker ${{ env.RELEASE_TAG }}
           body: |
             Twisted Song Mode for the Polyend Tracker+: named song sections, Loop Section with live jumping, Loop Selection, Clone In Place and linked pattern variations.
 
