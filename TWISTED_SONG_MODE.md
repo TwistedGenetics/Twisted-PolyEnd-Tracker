@@ -8,6 +8,8 @@ Built on Polyend Tracker Community Edition. Projects stay compatible with stock
 firmware: the extra song data is kept in a side file (`patterns/twistedSong`)
 that stock firmware ignores.
 
+**Manual:** the full illustrated manual is [`docs/Twisted_Song_Mode_Manual.pdf`](docs/Twisted_Song_Mode_Manual.pdf), and it's attached to every release. Its source is `docs/manual/manual.html`.
+
 ## Opening the tools
 
 In the **Song** screen, press **INSERT** to swap the eight buttons under the

@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Twisted Song Mode Manual</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+  :root {
+    --ink: #1a1a1a;
+    --muted: #555;
+    --rule: #c8c8c8;
+    --panel: #f0f0f0;
+    --accent: #b3121b;
+  }
+  * { box-sizing: border-box; }
+  html { background: #fff; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background: #fff;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+  h1, h2, h3 { line-height: 1.2; margin: 0; }
+  h2 {
+    font-size: 17pt;
+    margin: 0 0 4mm;
+    padding-bottom: 2mm;
+    border-bottom: 2px solid var(--ink);
+    break-after: avoid;
+  }
+  h3 { font-size: 12.5pt; margin: 6mm 0 2mm; break-after: avoid; }
+  p { margin: 0 0 3mm; }
+  ul, ol { margin: 0 0 3mm; padding-left: 6mm; }
+  li { margin-bottom: 1.2mm; }
+  section { margin-bottom: 9mm; }
+  .steps, ul { break-inside: avoid; }
+  h3 + p, h3 + ol, h3 + ul, h3 + table { break-before: avoid; }
+  .page-break { break-before: page; }
+
+  /* cover */
+  .cover {
+    height: 255mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border: 2px solid var(--ink);
+    padding: 16mm 14mm;
+  }
+  .cover .kicker {
+    font-size: 11pt;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .cover h1 { font-size: 40pt; letter-spacing: -.01em; margin-top: 6mm; }
+  .cover h1 span { color: var(--accent); }
+  .cover .sub { font-size: 14pt; margin-top: 5mm; max-width: 140mm; }
+  .cover .meta {
+    font-size: 10pt;
+    color: var(--muted);
+    border-top: 1px solid var(--rule);
+    padding-top: 4mm;
+  }
+  .cover .meta b { color: var(--ink); }
+
+  /* contents */
+  .toc ol { list-style: none; padding: 0; font-size: 12pt; }
+  .toc li {
+    display: flex;
+    gap: 3mm;
+    padding: 2mm 0;
+    border-bottom: 1px dotted var(--rule);
+  }
+  .toc li .n { width: 8mm; font-weight: 700; }
+
+  /* keys */
+  kbd {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 9pt;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    border: 1px solid #888;
+    border-bottom-width: 2px;
+    border-radius: 3px;
+    padding: 0 1.4mm;
+    background: #fff;
+    white-space: nowrap;
+  }
+  code {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 10pt;
+    background: var(--panel);
+    border: 1px solid #d0d0d0;
+    padding: 0 1mm;
+    color: var(--ink);
+  }
+
+  /* tables */
+  table { width: 100%; border-collapse: collapse; margin: 2mm 0 4mm; font-size: 10.5pt; break-inside: avoid; }
+  th, td { text-align: left; vertical-align: top; padding: 2mm 2.5mm; border-bottom: 1px solid var(--rule); }
+  th { border-bottom: 2px solid var(--ink); font-size: 9.5pt; text-transform: uppercase; letter-spacing: .06em; }
+  td.key { width: 16mm; font-weight: 700; }
+  td.yes { font-weight: 700; }
+
+  /* screen mock: light, high contrast */
+  .screen {
+    border: 2px solid var(--ink);
+    border-radius: 3mm;
+    padding: 3mm;
+    margin: 3mm 0 2mm;
+    background: #fff;
+    break-inside: avoid;
+  }
+  .screen .title {
+    font-weight: 700;
+    font-size: 11pt;
+    border-bottom: 1px solid var(--ink);
+    padding-bottom: 1.5mm;
+    margin-bottom: 2mm;
+  }
+  .screen .body {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 3mm;
+    min-height: 30mm;
+    margin-bottom: 2mm;
+  }
+  .grid-mock { display: grid; grid-template-rows: repeat(6, 1fr); gap: 1mm; }
+  .grid-mock div { border: 1px solid #999; background: var(--panel); position: relative; height: 4mm; }
+  .grid-mock div.loop { border-left: 3px solid var(--accent); }
+  .grid-mock div.divider { border-top: 3px solid var(--accent); }
+  .grid-mock div.queued { border-left: 3px solid #1a8a2e; }
+  .list-mock { font-family: "Courier New", Courier, monospace; font-size: 9.5pt; line-height: 1.55; }
+  .list-mock .sel { background: var(--ink); color: #fff; padding: 0 1mm; }
+  .labels { display: grid; grid-template-columns: repeat(8, 1fr); gap: 1mm; }
+  .labels div {
+    border: 1px solid var(--ink);
+    text-align: center;
+    font-size: 8.5pt;
+    line-height: 1.25;
+    padding: 1.2mm .5mm;
+    font-weight: 700;
+  }
+  .labels div small { display: block; font-weight: 400; }
+  .labels div.off { color: #999; border-color: #bbb; }
+  .caption { font-size: 9.5pt; color: var(--muted); margin-bottom: 4mm; }
+
+  /* callouts */
+  .note, .warn {
+    border-left: 4px solid var(--ink);
+    background: var(--panel);
+    padding: 2.5mm 3.5mm;
+    margin: 3mm 0 4mm;
+    break-inside: avoid;
+  }
+  .warn { border-left-color: var(--accent); }
+  .note b, .warn b { display: block; margin-bottom: 1mm; }
+
+  .steps { counter-reset: s; list-style: none; padding: 0; }
+  .steps > li { counter-increment: s; position: relative; padding-left: 9mm; margin-bottom: 2.5mm; }
+  .steps > li::before {
+    content: counter(s);
+    position: absolute; left: 0; top: 0;
+    width: 6mm; height: 6mm;
+    border: 1.5px solid var(--ink);
+    border-radius: 50%;
+    text-align: center;
+    font-weight: 700;
+    font-size: 9.5pt;
+    line-height: 5.6mm;
+  }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
+  .footer-note { font-size: 9pt; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 3mm; margin-top: 8mm; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ COVER -->
+<div class="cover">
+  <div>
+    <div class="kicker">Twisted PolyEnd Tracker · Firmware Manual</div>
+    <h1>Twisted<br><span>Song Mode</span></h1>
+    <p class="sub">Named sections, live section looping, selection loops, clone in place and linked pattern variations for the Polyend Tracker+.</p>
+  </div>
+  <div class="meta">
+    <b>Firmware:</b> Twisted PolyEnd Tracker, based on Polyend Tracker Community Edition 1.0.0<br>
+    <b>For:</b> Tracker+ (the original Tracker builds too; the Tracker Mini has no song tools)<br>
+    <b>Repository:</b> github.com/TwistedGenetics/Twisted-PolyEnd-Tracker<br>
+    <b>Manual version:</b> 1.0 · November 2026
+  </div>
+</div>
+
+<!-- ============================================================ CONTENTS -->
+<section class="toc page-break">
+  <h2>Contents</h2>
+  <ol>
+    <li><span class="n">1</span> What's new</li>
+    <li><span class="n">2</span> Installing the firmware</li>
+    <li><span class="n">3</span> The song tools page</li>
+    <li><span class="n">4</span> Song sections</li>
+    <li><span class="n">5</span> Loop Section and live jumping</li>
+    <li><span class="n">6</span> Loop Selection</li>
+    <li><span class="n">7</span> Clone in place</li>
+    <li><span class="n">8</span> Linked variations</li>
+    <li><span class="n">9</span> Projects, saving and compatibility</li>
+    <li><span class="n">10</span> Messages and troubleshooting</li>
+    <li><span class="n">11</span> Quick reference</li>
+  </ol>
+</section>
+
+<!-- ============================================================ 1 -->
+<section class="page-break">
+  <h2>1 · What's new</h2>
+  <p>Twisted Song Mode adds the arrangement tools of Paula's Revenge to the Tracker's Song screen. The rest of the Tracker works exactly as in Polyend's Community Edition.</p>
+  <table>
+    <tr><th>Feature</th><th>What it does</th></tr>
+    <tr><td><b>Song sections</b></td><td>Name the parts of a song (INTRO, DROP, BREAK…). Each section shows as a divider line in the song view.</td></tr>
+    <tr><td><b>Loop Section</b></td><td>Loop the section you're in. Move to another section while the song plays and the Tracker jumps there at the end of the current pattern.</td></tr>
+    <tr><td><b>Loop Selection</b></td><td>Loop any run of slots you highlight.</td></tr>
+    <tr><td><b>Clone In Place</b></td><td>Give one slot its own copy of a pattern, so you can change it without changing every other place the pattern is used.</td></tr>
+    <tr><td><b>Linked variations</b></td><td>A copy that keeps following the original on every track you haven't changed.</td></tr>
+  </table>
+  <div class="note"><b>Your projects stay safe</b>Sections and variation links are kept in a separate file inside the project. Stock Polyend firmware ignores that file, so it still opens your projects. It just won't show the sections or keep variations linked.</div>
+</section>
+
+<!-- ============================================================ 2 -->
+<section>
+  <h2>2 · Installing the firmware</h2>
+  <h3>Download</h3>
+  <ol class="steps">
+    <li>Open the repository's <b>Releases</b> page and download <code>TrackerPlus_Twisted_&lt;version&gt;.ptf</code> from the latest release (for example <code>TrackerPlus_Twisted_1.0.0.ptf</code>). This manual is attached to the same release.</li>
+    <li>Alternatively, open the <b>Actions</b> tab, choose the latest successful <i>Build Tracker CE Firmware</i> run and download the <code>polyend-tracker-ce-firmware</code> zip. The Tracker+ file inside is called <code>TrackerPlus_CE_&lt;commit&gt;.ptf</code>.</li>
+  </ol>
+
+  <h3>Flash</h3>
+  <ol class="steps">
+    <li>Back up your SD card, or at least your <code>Projects</code> folder.</li>
+    <li>Copy the <code>.ptf</code> file into the <code>Firmware</code> folder on the SD card. Keep a stock firmware file in the same folder so you can go back.</li>
+    <li>Put the card in the Tracker+ and switch it on.</li>
+    <li>Go to <b>Config › Firmware › Firmware update</b>, pick the Twisted file and confirm.</li>
+    <li>Let the update finish. Don't switch off while it runs. The Tracker restarts on its own.</li>
+  </ol>
+
+  <div class="warn"><b>Going back to stock</b>Flash the stock Polyend <code>.ptf</code> the same way. The update loader is separate from the firmware, so you can always re-flash, even if a build won't start.</div>
+  <div class="note"><b>Testing status</b>This firmware builds cleanly for all three Trackers, but it is new. Try it on a copy of a project before you trust it with a gig set.</div>
+</section>
+
+<!-- ============================================================ 3 -->
+<section>
+  <h2>3 · The song tools page</h2>
+  <p>Open the <b>Song</b> screen and press <kbd>Insert</kbd>. The eight labels under the screen change to the song tools. Press <kbd>Insert</kbd> again, or <kbd>F7</kbd> (Back), to return to the normal song buttons.</p>
+
+  <div class="screen">
+    <div class="title">Song Tools</div>
+    <div class="body">
+      <div class="grid-mock">
+        <div></div><div></div><div class="divider loop"></div><div class="loop"></div><div class="loop"></div><div></div>
+      </div>
+      <div class="list-mock">
+        01 Intro beat<br>
+        02 Intro beat<br>
+        <span class="sel">03 DROP: AMEN CHOP</span><br>
+        04 ~AMEN CHOP<br>
+        05 Reese roll<br>
+        06 BREAK: Pads
+      </div>
+    </div>
+    <div class="labels">
+      <div>Section<small>Name</small></div>
+      <div>Section<small>Remove</small></div>
+      <div>Loop<small>Section ON</small></div>
+      <div>Loop<small>Selection</small></div>
+      <div>Clone<small>In Place</small></div>
+      <div>Make<small>Variation</small></div>
+      <div>Back</div>
+      <div>Unlink<small>Variation</small></div>
+    </div>
+  </div>
+  <p class="caption">The tools page with REC on and a section loop running. The red line on the left of the blocks is a section divider. The red bar down the edge marks the looped slots.</p>
+
+  <table>
+    <tr><th>Key</th><th>Tool</th><th>Needs REC</th></tr>
+    <tr><td class="key">F1</td><td><b>Section Name.</b> Start a section at the selected slot, or rename the one that starts there.</td><td class="yes">Yes</td></tr>
+    <tr><td class="key">F2</td><td><b>Section Remove.</b> Remove the divider of the section the selected slot is in.</td><td class="yes">Yes</td></tr>
+    <tr><td class="key">F3</td><td><b>Loop Section.</b> Loop the selected slot's section. Press again to stop.</td><td>No</td></tr>
+    <tr><td class="key">F4</td><td><b>Loop Selection.</b> Loop the highlighted slots. Press again to stop.</td><td>No</td></tr>
+    <tr><td class="key">F5</td><td><b>Clone In Place.</b> Give this slot its own copy of the pattern.</td><td class="yes">Yes</td></tr>
+    <tr><td class="key">F6</td><td><b>Make Variation.</b> Give this slot a linked copy of the pattern.</td><td class="yes">Yes</td></tr>
+    <tr><td class="key">F7</td><td><b>Back.</b> Return to the normal song buttons.</td><td>No</td></tr>
+    <tr><td class="key">F8</td><td><b>Unlink Variation.</b> Turn a variation into an ordinary pattern.</td><td class="yes">Yes</td></tr>
+  </table>
+  <ul>
+    <li>Tools that change the song are greyed out until you press <kbd>Rec</kbd>. Pressing one without REC shows <i>Press REC to edit the song</i>.</li>
+    <li>The arrows, encoder, <kbd>Play</kbd>, <kbd>Rec</kbd> and <kbd>Shift</kbd> work as usual while the tools are showing.</li>
+    <li><kbd>Shift</kbd> + <kbd>Insert</kbd> still jumps to the top of the song.</li>
+    <li>The Tracker remembers that the tools page was open when you leave the Song screen and come back.</li>
+  </ul>
+</section>
+
+<!-- ============================================================ 4 -->
+<section>
+  <h2>4 · Song sections</h2>
+  <p>A section is a named part of the song. It starts at a slot you choose and runs until the next section starts. Any slots before the first section count as one unnamed section.</p>
+
+  <h3>Name a section</h3>
+  <ol class="steps">
+    <li>Press <kbd>Rec</kbd> so edit mode is on.</li>
+    <li>Select the first slot of the part in the song list.</li>
+    <li>Press <kbd>Insert</kbd> for the tools, then <kbd>F1</kbd> (Section Name).</li>
+    <li>Type the name, the same way you name a pattern (details below).</li>
+    <li>Press <kbd>F8</kbd> (Save). <kbd>F7</kbd> (Cancel) leaves without changing anything.</li>
+  </ol>
+
+  <h3>Typing a name</h3>
+  <table>
+    <tr><th>Control</th><th>Does</th></tr>
+    <tr><td><b>Pads</b></td><td>Type the letter shown on the on-screen keyboard.</td></tr>
+    <tr><td><b>Arrows</b></td><td>Move around the on-screen keyboard.</td></tr>
+    <tr><td><b>F1</b> or <b>Insert</b></td><td>Type the highlighted key.</td></tr>
+    <tr><td><b>Delete</b></td><td>Backspace.</td></tr>
+    <tr><td><b>F7</b> / <b>F8</b></td><td>Cancel / Save.</td></tr>
+  </table>
+
+  <h3>How sections look</h3>
+  <ul>
+    <li>A <b>red line</b> runs across the song blocks at the top of each section.</li>
+    <li>The section's first slot in the list starts with the section name, for example <code>DROP: AMEN CHOP</code>.</li>
+  </ul>
+
+  <h3>Renaming and removing</h3>
+  <ul>
+    <li>To rename a section, select its first slot and press <kbd>F1</kbd> again. The current name is filled in for you.</li>
+    <li>To remove a section, select any slot in it and press <kbd>F2</kbd>. The slots stay; they join the section above.</li>
+    <li>Saving an empty name also removes the section.</li>
+  </ul>
+
+  <h3>Editing the song</h3>
+  <p>Dividers move with the music. If you add or delete slots, the sections after that point shift with them. Deleting the first slot of a section moves the divider to the slot that takes its place.</p>
+  <div class="note"><b>Limits</b>Up to 32 sections per song. Names can be up to 16 characters.</div>
+</section>
+
+<!-- ============================================================ 5 -->
+<section>
+  <h2>5 · Loop Section and live jumping</h2>
+  <p>Loop Section keeps the song cycling around one part while you play over it, then lets you move to another part on the beat. This is the Paula's Revenge "jam between parts" workflow.</p>
+
+  <h3>Start a section loop</h3>
+  <ol class="steps">
+    <li>Select a slot in the part you want to loop.</li>
+    <li>Press <kbd>F3</kbd> (Loop Section). A message shows the section name and its slots.</li>
+    <li>Start the song with <kbd>Play</kbd>. It plays through the section and goes back to its first slot instead of carrying on.</li>
+  </ol>
+  <p>The looped slots get a <b>red bar</b> down their left edge, and the title bar shows <code>Song   LOOP: DROP</code>. If the section has no name, the title shows the slot numbers instead.</p>
+
+  <h3>Jump to another section while playing</h3>
+  <p>With Loop Section on, you can move the selection while the song plays, even without REC.</p>
+  <ol class="steps">
+    <li>Use the arrows or the encoder to select a slot in a different section.</li>
+    <li>That slot gets a <b>green bar</b> on its left edge: the jump is queued.</li>
+    <li>When the current pattern ends, playback jumps to the selected slot and loops its section from then on.</li>
+  </ol>
+  <ul>
+    <li>You choose exactly where to land: pick the first slot of a section for a clean entry, or a later slot to come in part-way.</li>
+    <li>Moving the selection back into the playing section before the pattern ends cancels the jump.</li>
+    <li>While a section loop runs, the selection stays where you put it instead of following playback, so you can line up the next jump.</li>
+  </ul>
+
+  <h3>Stop looping</h3>
+  <p>Press <kbd>F3</kbd> again. The song carries on to the end as normal from wherever it is.</p>
+
+  <div class="note"><b>Starting playback</b><kbd>Play</kbd> (or Play Song on the normal song buttons) always starts the song from the selected slot, and clears any queued jump. If Loop Section is on, the loop moves to the section you started in.</div>
+</section>
+
+<!-- ============================================================ 6 -->
+<section>
+  <h2>6 · Loop Selection</h2>
+  <p>Loop Selection loops any run of slots, whether or not they line up with your sections.</p>
+  <ol class="steps">
+    <li>Go to the block grid on the left (the arrows move between the grid and the list).</li>
+    <li>Hold <kbd>Shift</kbd> and use the arrows to highlight the slots.</li>
+    <li>Press <kbd>F4</kbd> (Loop Selection). A message shows the slot numbers.</li>
+  </ol>
+  <ul>
+    <li>If you're in the song list instead of the grid, <kbd>F4</kbd> loops just the selected slot.</li>
+    <li>If the song is playing outside the selection, it goes to the first selected slot when the current pattern ends.</li>
+    <li>The looped slots get the red bar, and the title shows <code>LOOP: 5-8</code>.</li>
+    <li>Press <kbd>F4</kbd> again to stop.</li>
+  </ul>
+  <p>Only one loop can be on at a time. Turning on Loop Selection replaces a section loop, and the other way round.</p>
+  <div class="warn"><b>When loops switch off on their own</b>Adding or deleting a slot turns any loop off and clears a queued jump, because the slot numbers have changed. Turn the loop on again afterwards.</div>
+  <div class="note"><b>Exporting</b>Song export always renders the song straight through once, from start to end. Loops and queued jumps are ignored while exporting.</div>
+</section>
+
+<!-- ============================================================ 7 -->
+<section>
+  <h2>7 · Clone in place</h2>
+  <p>Normally a pattern used in several slots is the same pattern everywhere: change it once and every slot changes. Clone In Place gives one slot a separate copy.</p>
+  <ol class="steps">
+    <li>Press <kbd>Rec</kbd>.</li>
+    <li>Select the slot in the song list.</li>
+    <li>Press <kbd>F5</kbd> (Clone In Place).</li>
+  </ol>
+  <p>The Tracker copies the pattern into the <b>next free pattern</b> and points the slot at the copy. A message tells you the new pattern number, for example <i>Slot 7 now plays pattern 23</i>. The copy has the same name as the original.</p>
+  <p>The next free pattern is the lowest-numbered pattern that is empty, isn't used anywhere in the song, and isn't part of a variation.</p>
+  <div class="note"><b>Tip</b>Clone a slot, then open it in the pattern editor to make a fill or a drop-out for that one bar without touching the main groove.</div>
+</section>
+
+<!-- ============================================================ 8 -->
+<section>
+  <h2>8 · Linked variations</h2>
+  <p>A linked variation is a copy that keeps following the original. Change the drums in the original and the variation's drums change too, unless you've already changed the variation's drums yourself.</p>
+
+  <h3>Make a variation</h3>
+  <ol class="steps">
+    <li>Press <kbd>Rec</kbd> and select the slot.</li>
+    <li>Press <kbd>F6</kbd> (Make Variation).</li>
+  </ol>
+  <p>As with Clone In Place, the slot now plays a new pattern. In the song list it is marked with a <code>~</code>, for example <code>~AMEN CHOP</code>.</p>
+
+  <h3>How following works</h3>
+  <div class="two">
+    <div>
+      <p><b>Tracks you haven't touched</b> follow the original. Whatever you write in the original appears in the variation.</p>
+    </div>
+    <div>
+      <p><b>Tracks you've changed</b> belong to the variation. The first time you change a track in the variation, that track stops following, for good.</p>
+    </div>
+  </div>
+  <ul>
+    <li>Changes count however you make them: in the pattern editor, or by pasting or deleting tracks in the Song screen.</li>
+    <li>The pattern length follows the original too, until you change the variation's length.</li>
+    <li>A variation can itself be the original of another variation. Changes pass down the chain.</li>
+  </ul>
+
+  <h3>When updates happen</h3>
+  <p>A variation picks up changes when the original is saved to the workspace. That happens when you switch to another pattern, go to another screen, or the Tracker autosaves. So you'll see the change in the variation a moment after you leave the original.</p>
+  <p>If you're editing a variation when its original updates, your unsaved edits are saved first, so they stay yours and aren't overwritten.</p>
+
+  <h3>Unlink a variation</h3>
+  <p>Select its slot, press <kbd>Rec</kbd>, then <kbd>F8</kbd> (Unlink Variation). It keeps its current notes and becomes an ordinary pattern. The <code>~</code> disappears.</p>
+
+  <div class="note"><b>Example</b>Make three variations of your main jungle break for verse 2, verse 3 and the outro. Change only the snare track in each one. If you then tweak the kick or hats in the original, all three variations get the new kick and hats, but each keeps its own snare.</div>
+</section>
+
+<!-- ============================================================ 9 -->
+<section>
+  <h2>9 · Projects, saving and compatibility</h2>
+  <ul>
+    <li>Sections and variation links are saved in the file <code>patterns/twistedSong</code> inside each project, next to the pattern files.</li>
+    <li>They're saved and opened with the project as usual. You don't need to do anything extra.</li>
+    <li>A new or older project with no <code>twistedSong</code> file simply starts with no sections and no variations.</li>
+  </ul>
+  <h3>Opening a project on stock firmware</h3>
+  <p>Stock firmware ignores <code>twistedSong</code>, so the project opens and plays normally.</p>
+  <ul>
+    <li>Sections aren't shown.</li>
+    <li>Variations play as ordinary patterns with the notes they had when last saved.</li>
+    <li>Edits made on stock firmware don't update variations. When you're back on Twisted firmware, the links resume from the next time an original is saved.</li>
+  </ul>
+  <div class="note"><b>Sharing projects</b>Anyone on stock firmware can open your projects; they just won't see the sections or keep variations linked.</div>
+</section>
+
+<!-- ============================================================ 10 -->
+<section>
+  <h2>10 · Messages and troubleshooting</h2>
+  <table>
+    <tr><th>Message or problem</th><th>Meaning / what to do</th></tr>
+    <tr><td><b>Press REC to edit the song</b></td><td>That tool changes the song. Turn on edit mode with <kbd>Rec</kbd> first.</td></tr>
+    <tr><td><b>No free pattern left</b></td><td>Every pattern is used, so Clone In Place or Make Variation has nowhere to copy to. Clear a pattern you don't need.</td></tr>
+    <tr><td><b>Too many sections</b></td><td>The song already has 32 sections. Remove one first.</td></tr>
+    <tr><td><b>No section here</b></td><td>The selected slot is before the first section, so there's no divider to remove.</td></tr>
+    <tr><td><b>Not a linked variation</b></td><td>Unlink only works on slots marked with <code>~</code>.</td></tr>
+    <tr><td>The loop stopped by itself</td><td>You added or deleted a slot. Turn the loop on again.</td></tr>
+    <tr><td>The selection won't move while playing</td><td>Live selection only works with Loop Section on, or with REC on.</td></tr>
+    <tr><td>A variation didn't update</td><td>The original hasn't been saved yet. Switch pattern or screen, then check again. If you changed that track in the variation, it no longer follows by design.</td></tr>
+    <tr><td>Insert doesn't open the tools</td><td>Check that you're running the Twisted firmware and are on the Song screen. The Tracker Mini has no song tools.</td></tr>
+  </table>
+  <p>Found a bug? Open an issue on the repository with the steps that cause it.</p>
+</section>
+
+<!-- ============================================================ 11 -->
+<section>
+  <h2>11 · Quick reference</h2>
+  <table>
+    <tr><th>Do this</th><th>Press</th></tr>
+    <tr><td>Open / close song tools</td><td><kbd>Insert</kbd> on the Song screen</td></tr>
+    <tr><td>Name or rename a section</td><td><kbd>Rec</kbd>, select first slot, <kbd>F1</kbd>, type, <kbd>F8</kbd></td></tr>
+    <tr><td>Remove a section</td><td><kbd>Rec</kbd>, select a slot in it, <kbd>F2</kbd></td></tr>
+    <tr><td>Loop the current section</td><td><kbd>F3</kbd> (again to stop)</td></tr>
+    <tr><td>Jump to another section live</td><td>Loop Section on, select a slot in the other section while playing</td></tr>
+    <tr><td>Loop highlighted slots</td><td><kbd>Shift</kbd> + arrows in the grid, then <kbd>F4</kbd></td></tr>
+    <tr><td>Separate copy for one slot</td><td><kbd>Rec</kbd>, select slot, <kbd>F5</kbd></td></tr>
+    <tr><td>Linked variation for one slot</td><td><kbd>Rec</kbd>, select slot, <kbd>F6</kbd></td></tr>
+    <tr><td>Unlink a variation</td><td><kbd>Rec</kbd>, select slot, <kbd>F8</kbd></td></tr>
+    <tr><td>Back to normal song buttons</td><td><kbd>F7</kbd> or <kbd>Insert</kbd></td></tr>
+  </table>
+
+  <h3>Song view marks</h3>
+  <table>
+    <tr><th>Mark</th><th>Means</th></tr>
+    <tr><td>Red line across the blocks</td><td>A section starts here</td></tr>
+    <tr><td>Red bar on the left edge</td><td>Slot is in the active loop</td></tr>
+    <tr><td>Green bar on the left edge</td><td>Queued jump: playback goes here next</td></tr>
+    <tr><td><code>NAME:</code> before a pattern name</td><td>First slot of a section</td></tr>
+    <tr><td><code>~</code> before a pattern name</td><td>Linked variation</td></tr>
+    <tr><td><code>LOOP: …</code> in the title bar</td><td>A loop is on</td></tr>
+  </table>
+
+  <p class="footer-note">Twisted PolyEnd Tracker is an unofficial community fork of Polyend Tracker Community Edition. It is not made or supported by Polyend. Polyend and Tracker are trademarks of their owners. Use at your own risk and keep backups of your projects.</p>
+</section>
+
+</body>
+</html>
