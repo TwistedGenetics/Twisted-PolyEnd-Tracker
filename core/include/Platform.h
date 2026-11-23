@@ -401,7 +401,8 @@ class FileSystem
                                 enListFileFilter filter = enListFileFilter_all,
                                 uint16_t skip_count = 0,
                                 uint16_t max_files_in_subdir = 0,
-                                enListFileFilter folderSizeFilter = enListFileFilter_all) = 0;
+                                enListFileFilter folderSizeFilter = enListFileFilter_all,
+                                uint32_t* signature = nullptr) = 0; // Twisted: a hash of the listed files
 
     virtual void listDirContents(const char* dirpath,
                                  DirContentType contentType,

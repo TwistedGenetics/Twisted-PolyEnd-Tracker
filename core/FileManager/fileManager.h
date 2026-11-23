@@ -652,6 +652,12 @@ class cFileManager
 
     static uint32_t currentFolderMemoryFileUsage[explorer_list_max];
     bool browseCheckOneFile(uint16_t pos); // Twisted: one open per file
+    // Twisted: the folder index - a scanned folder's checked files and sizes, kept on the SD card so the
+    // folder opens at once next time (until a file in it changes)
+    uint32_t browseSignature = 0;
+    bool loadBrowseIndex();
+    void saveBrowseIndex();
+    void browseIndexPath(char* out, size_t outSize);
 
     // export sound
     void exportSoundEnd();

@@ -188,6 +188,13 @@ Code: `core/FileManager/fileManagerBrowse.cpp`, `platforms/*/SD.cpp`
   256 samples: the editor's algorithm), read one file per idle call of the file manager. `/Crafty/Crafty Synth.user`
   (the plugin's user area) is loaded first; user presets U1-1..U16-8 are selectable.
 
+## Folder index (v1.8.0)
+
+- `createFilesList` can return a signature (FNV-1a of the listed files' names, sizes, dates and times).
+- After a folder (or 499-file group) is scanned, `saveBrowseIndex` writes `/.TwistedIndex/<path hash>_<offset>.idx`
+  (hidden): the signature, the sample settings, the path, and each usable file's name and memory size. Next time
+  `loadBrowseIndex` takes it when the signature matches, so no sample file is opened.
+
 ## Files
 
 | File | What |

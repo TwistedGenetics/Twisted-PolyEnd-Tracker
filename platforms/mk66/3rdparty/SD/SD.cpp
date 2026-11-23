@@ -681,8 +681,10 @@ uint16_t SdDir::createFilesList(uint16_t start_line,
                                 enListFileFilter filter,
                                 uint16_t skip_count,
                                 uint16_t max_files_in_subdir,
-                                enListFileFilter folderSizeFilter)
+                                enListFileFilter folderSizeFilter,
+                                uint32_t* signature)
 {
+    uint32_t hash = 2166136261u; // Twisted: FNV-1a over the listed files' names, sizes and dates
     for (uint16_t i = 0; i < list_length; i++) // wyczyszczenie uzytej wczesniej pamieci
     {
         if (list[i] != nullptr)
@@ -747,6 +749,15 @@ uint16_t SdDir::createFilesList(uint16_t start_line,
         list[n] = new (std::nothrow) char[len];
         if (list[n] == nullptr) // Twisted: out of heap - stop listing instead of crashing
             break;
+        if (signature != nullptr && !(fno.fattrib & AM_DIR))
+        {
+            for (const char* c = fno.fname; *c; c++)
+                hash = (hash ^ static_cast<uint8_t>(*c)) * 16777619u;
+            const uint32_t extra[3] = { static_cast<uint32_t>(fno.fsize), fno.fdate, fno.ftime };
+            for (uint32_t e : extra)
+                for (int b = 0; b < 4; b++)
+                    hash = (hash ^ ((e >> (8 * b)) & 0xFFu)) * 16777619u;
+        }
         memory_used += len;
 
         if (fno.fattrib & AM_DIR) // folder
@@ -795,6 +806,8 @@ uint16_t SdDir::createFilesList(uint16_t start_line,
         n++;
     }
 
+    if (signature != nullptr)
+        *signature = hash;
     return n;
 }
 

@@ -401,7 +401,8 @@ int FileSystemImpl::createFilesList(const char* path,
                                     enListFileFilter filter,
                                     uint16_t skip_count,
                                     uint16_t max_files_in_subdir,
-                                    enListFileFilter folderSizeFilter)
+                                    enListFileFilter folderSizeFilter,
+                                    uint32_t* signature)
 {
     SdDir dir;
 
@@ -417,7 +418,8 @@ int FileSystemImpl::createFilesList(const char* path,
                                                 (SdDir::enListFileFilter)filter,
                                                 skip_count,
                                                 max_files_in_subdir,
-                                                (SdDir::enListFileFilter)folderSizeFilter);
+                                                (SdDir::enListFileFilter)folderSizeFilter,
+                                                signature);
 
     dir.close();
     return locationFileCount;

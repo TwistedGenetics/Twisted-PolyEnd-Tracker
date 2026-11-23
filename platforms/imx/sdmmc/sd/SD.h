@@ -173,7 +173,8 @@ class SdDir
                              enListFileFilter filter = enListFileFilter_all,
                              uint16_t skip_count = 0,
                              uint16_t max_files_in_subdir = 0,
-                             enListFileFilter folderSizeFilter = enListFileFilter_all);
+                             enListFileFilter folderSizeFilter = enListFileFilter_all,
+                             uint32_t* signature = nullptr);
 
     uint16_t createInstrumentsList(char** list, uint8_t list_length, uint32_t* sizeOut);
     uint16_t countContainedFiles();

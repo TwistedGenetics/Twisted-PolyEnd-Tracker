@@ -13,6 +13,7 @@
 #include "Tracker.h"
 
 #include <cctype>
+#include <new>
 #include <cstdlib>
 #include <cstring>
 #include <inttypes.h>
@@ -258,6 +259,7 @@ void cFileManager::listOnlyWavFromActualPath()
     //    instead of one file per update
     if (listWavStage == 0) // stage 0 - list
     {
+        browseSignature = 0;
         int filesFound =
           fileSystem->createFilesList(explorerCurrentPath,
                                       0,
@@ -265,7 +267,10 @@ void cFileManager::listOnlyWavFromActualPath()
                                       (explorer_list_max - explorerListLength),
                                       24000,
                                       FileSystem::enListFileFilter_wave_inst,
-                                      std::max(explorerCurrentOffset - explorerFolderCount, 0));
+                                      std::max(explorerCurrentOffset - explorerFolderCount, 0),
+                                      0,
+                                      FileSystem::enListFileFilter_all,
+                                      &browseSignature);
 
         if (filesFound <= 0) // nie ma plikow wav w folderze (lub blad) - koncz listowanie
         {
@@ -286,6 +291,13 @@ void cFileManager::listOnlyWavFromActualPath()
 
         openCurrentPos = openCalcStart;
         listWavStage = 1;
+
+        // Twisted: scanned before and nothing changed - take the saved result, no file is opened
+        if (loadBrowseIndex())
+        {
+            listWavStage = 0;
+            browseFinish();
+        }
     }
     else // stage 1 - validate + size, several files per update
     {
@@ -321,8 +333,177 @@ void cFileManager::listOnlyWavFromActualPath()
         }
 
         listWavStage = 0;
+        saveBrowseIndex(); // Twisted: next time this folder opens at once
         browseFinish();
     }
+}
+
+//====================================================================================================
+// Twisted: the folder index. One small file per folder (and per 499-file group) in /.TwistedIndex:
+//   "TWIX", version, the listing's signature (names, sizes, dates of the files listed), the sample
+//   settings the sizes depend on, the folder's path, then each usable file: name and memory size.
+// A folder whose files changed lists with a new signature, so its index is simply rebuilt.
+//====================================================================================================
+static constexpr char kBrowseIndexDir[] = "/.TwistedIndex";
+static constexpr uint8_t kBrowseIndexVersion = 1;
+
+void cFileManager::browseIndexPath(char* out, size_t outSize)
+{
+    uint32_t h = 2166136261u;
+    for (const char* c = explorerCurrentPath; *c; c++)
+        h = (h ^ static_cast<uint8_t>(*c)) * 16777619u;
+    snprintf(out, outSize, "%s/%08lX_%u.idx", kBrowseIndexDir, static_cast<unsigned long>(h),
+             static_cast<unsigned>(explorerCurrentOffset));
+}
+
+bool cFileManager::loadBrowseIndex()
+{
+    if (browseSignature == 0)
+        return false;
+
+    char path[64];
+    browseIndexPath(path, sizeof(path));
+    if (!fileSystem->exists(path))
+        return false;
+
+    auto [isOpen, fh] = fileSystem->openFile(path, FileSystem::FileOpenMode::kRead);
+    if (!isOpen)
+        return false;
+
+    bool ok = false;
+    bool dropped = false;
+    uint8_t head[16];
+    char storedPath[256];
+    do
+    {
+        if (fileSystem->readFile(head, 16, fh) != 16)
+            break;
+        uint32_t sig, rate;
+        uint16_t count;
+        memcpy(&sig, head + 5, 4);
+        memcpy(&rate, head + 9, 4);
+        memcpy(&count, head + 13, 2);
+        const uint8_t pathLen = head[15];
+        if (memcmp(head, "TWIX", 4) != 0 || head[4] != kBrowseIndexVersion || sig != browseSignature ||
+            rate != (targetSampleRate | (stereoSampleMode ? 0x80000000u : 0u)))
+            break;
+        if (fileSystem->readFile(storedPath, pathLen, fh) != pathLen)
+            break;
+        storedPath[pathLen] = 0;
+        if (strcmp(storedPath, explorerCurrentPath) != 0)
+            break;
+        if (openCalcStart + count > explorer_list_max)
+            break;
+
+        // the saved list replaces the one just made
+        for (uint16_t i = openCalcStart; i < explorerListLength; i++)
+        {
+            delete explorerList[i];
+            explorerList[i] = nullptr;
+        }
+        dropped = true;
+        uint16_t pos = openCalcStart;
+        ok = true;
+        for (uint16_t i = 0; i < count; i++)
+        {
+            uint8_t len;
+            uint32_t size;
+            char* name;
+            if (fileSystem->readFile(&len, 1, fh) != 1 || len == 0 ||
+                (name = new (std::nothrow) char[len + 1]) == nullptr)
+            {
+                ok = false;
+                break;
+            }
+            if (fileSystem->readFile(name, len, fh) != len || fileSystem->readFile(&size, 4, fh) != 4)
+            {
+                delete[] name;
+                ok = false;
+                break;
+            }
+            name[len] = 0;
+            explorerList[pos] = name;
+            currentFolderMemoryFileUsage[pos] = size;
+            pos++;
+        }
+        explorerListLength = pos;
+        if (!ok)
+        {
+            // a damaged index: list again from the card (and the index is rewritten)
+            for (uint16_t i = openCalcStart; i < explorerListLength; i++)
+            {
+                delete explorerList[i];
+                explorerList[i] = nullptr;
+            }
+            explorerListLength = openCalcStart;
+        }
+    } while (false);
+
+    fileSystem->closeFile(fh);
+
+    if (!ok && dropped)
+    {
+        // the list was dropped: make it again so the normal scan can run
+        browseSignature = 0;
+        int filesFound = fileSystem->createFilesList(explorerCurrentPath,
+                                                     0,
+                                                     explorerList + openCalcStart,
+                                                     (explorer_list_max - openCalcStart),
+                                                     24000,
+                                                     FileSystem::enListFileFilter_wave_inst,
+                                                     std::max(explorerCurrentOffset - explorerFolderCount, 0),
+                                                     0,
+                                                     FileSystem::enListFileFilter_all,
+                                                     &browseSignature);
+        explorerListLength = openCalcStart + (filesFound > 0 ? filesFound : 0);
+        if (openCalcStart < explorerListLength - 1)
+        {
+            std::sort(explorerList + openCalcStart,
+                      explorerList + explorerListLength,
+                      [](char* a, char* b) { return compareStrings(a, b); });
+        }
+    }
+    return ok;
+}
+
+void cFileManager::saveBrowseIndex()
+{
+    if (browseSignature == 0)
+        return;
+
+    if (!fileSystem->exists(kBrowseIndexDir))
+        fileSystem->mkdir(1, kBrowseIndexDir); // hidden
+
+    char path[64];
+    browseIndexPath(path, sizeof(path));
+    auto [isOpen, fh] = fileSystem->openFile(path, FileSystem::FileOpenMode::kWriteCreateNew);
+    if (!isOpen)
+        return;
+
+    const size_t pathLen = std::min<size_t>(strlen(explorerCurrentPath), 255);
+    const uint16_t count = explorerListLength - openCalcStart;
+    const uint32_t rate = targetSampleRate | (stereoSampleMode ? 0x80000000u : 0u);
+    uint8_t head[16];
+    memcpy(head, "TWIX", 4);
+    head[4] = kBrowseIndexVersion;
+    memcpy(head + 5, &browseSignature, 4);
+    memcpy(head + 9, &rate, 4);
+    memcpy(head + 13, &count, 2);
+    head[15] = static_cast<uint8_t>(pathLen);
+
+    bool ok = fileSystem->writeFile(head, 16, fh) == 16 &&
+              fileSystem->writeFile(explorerCurrentPath, pathLen, fh) == static_cast<int32_t>(pathLen);
+    for (uint16_t i = openCalcStart; ok && i < explorerListLength; i++)
+    {
+        const char* name = explorerList[i];
+        const uint8_t len = static_cast<uint8_t>(std::min<size_t>(strlen(name), 255));
+        const uint32_t size = currentFolderMemoryFileUsage[i];
+        ok = fileSystem->writeFile(&len, 1, fh) == 1 && fileSystem->writeFile(name, len, fh) == len &&
+             fileSystem->writeFile(&size, 4, fh) == 4;
+    }
+    fileSystem->closeFile(fh);
+    if (!ok)
+        fileSystem->remove(path);
 }
 
 bool cFileManager::browseCheckOneFile(uint16_t pos)
