@@ -72,6 +72,7 @@ void Sequencer::init()
 
 void Sequencer::update()
 {
+    twCapturePoll(); // Twisted: Capture's passes round the pattern
     reloadPatternAfterStop();
     updatePatternManagment();
 }
@@ -2587,6 +2588,8 @@ AUDIO_CORE_FLASH void Sequencer::handleNoteOn(
   int8_t velocity, // 0-127, historyczna wartosc specjalna -1 jest tozsama z 127
   int16_t source)  // nr pada, jesli midi to source = nuta+100,
 {
+    twCaptureLog(true, note, velocity < 0 ? 127 : velocity, channel); // Twisted: Capture listens
+
     if (!recVelocity() || velocity < 0)
     {
         velocity = 127;
@@ -2894,6 +2897,8 @@ void Sequencer::handleNoteOff(byte channel, // pochodzenie grida np. GRID_OUTSID
                               [[maybe_unused]] byte velocity,
                               int16_t source) // nr pada, jesli midi to source = nuta+100,
 {
+    twCaptureLog(false, note, 0, channel); // Twisted: Capture listens
+
     strSelection* sel = &selection;
     if (!isSelectionCorrect(sel))
         return;

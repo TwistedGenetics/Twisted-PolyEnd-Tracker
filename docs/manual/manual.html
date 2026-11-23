@@ -202,7 +202,7 @@
     <b>Firmware:</b> Twisted PolyEnd Tracker, based on Polyend Tracker Community Edition 1.0.0<br>
     <b>For:</b> Tracker+ (the original Tracker builds too; the Tracker Mini has no song tools)<br>
     <b>Repository:</b> github.com/TwistedGenetics/Twisted-PolyEnd-Tracker<br>
-    <b>Manual version:</b> 3.5 · November 2026
+    <b>Manual version:</b> 3.6 · November 2026
   </div>
 </div>
 
@@ -226,9 +226,10 @@
     <li><span class="n">14</span> REESE synth</li>
     <li><span class="n">15</span> CRAFTY synth</li>
     <li><span class="n">16</span> SUB, JUNO and DX7 synths</li>
-    <li><span class="n">17</span> Projects, saving and compatibility</li>
-    <li><span class="n">18</span> Messages and troubleshooting</li>
-    <li><span class="n">19</span> Quick reference</li>
+    <li><span class="n">17</span> Capture</li>
+    <li><span class="n">18</span> Projects, saving and compatibility</li>
+    <li><span class="n">19</span> Messages and troubleshooting</li>
+    <li><span class="n">20</span> Quick reference</li>
   </ol>
 </section>
 
@@ -859,9 +860,28 @@
   <div class="note"><b>Memory</b>The DX7 voices and banks take 64 KB more from the sample memory (now 1 MB less than stock firmware, about 58.9 MB).</div>
 </section>
 
+<!-- ============================================================ capture -->
+<section>
+  <h2>17 · Capture</h2>
+  <p>Like Ableton's Capture MIDI: the Tracker always listens to what you play on the pads or a MIDI keyboard, even when you aren't recording. Liked what you just played? Press <b>Capture</b> and it goes into the pattern, quantised to the steps.</p>
+  <ol>
+    <li>Play: over the pattern while it plays, or with it stopped.</li>
+    <li>Put the cursor on the track (and, if you played while stopped, the step) where it should go.</li>
+    <li>In the pattern editor, press <b>More</b> until the third page, then <b>Capture Played</b>.</li>
+  </ol>
+  <ul>
+    <li><b>Played while the pattern was playing:</b> each note goes on the step where you played it (the nearest step). Each time round the pattern is a separate take, so loops never pile up: Capture writes the last time round that had notes in it.</li>
+    <li><b>Played while stopped:</b> the notes since your last pause of more than 4 seconds, from the cursor's step at the tempo.</li>
+    <li>Notes go on the cursor's track with the current instrument. Notes played together (a chord) spread over the next free tracks of the same kind. Capture never writes over a note: one with no room is skipped, and the message says how many.</li>
+    <li>A note-off goes where you let go, unless the track's next note ends the note first (legato). Velocity is written when <b>Config, Recording options</b> records velocity.</li>
+    <li>One capture is one <b>Undo</b>. After a capture the Tracker starts listening afresh. Notes recorded with REC or step entry aren't captured again.</li>
+    <li>If you played over another pattern (song mode), it says which: open that pattern and press Capture there.</li>
+  </ul>
+</section>
+
 <!-- ============================================================ 10 -->
 <section>
-  <h2>17 · Projects, saving and compatibility</h2>
+  <h2>18 · Projects, saving and compatibility</h2>
   <ul>
     <li>Sections, variation links and block colours are saved in the file <code>patterns/twistedSong</code> inside each project, next to the pattern files.</li>
     <li>They're saved and opened with the project as usual. You don't need to do anything extra.</li>
@@ -881,7 +901,7 @@
 
 <!-- ============================================================ 10 -->
 <section>
-  <h2>18 · Messages and troubleshooting</h2>
+  <h2>19 · Messages and troubleshooting</h2>
   <table>
     <tr><th>Message or problem</th><th>Meaning / what to do</th></tr>
     <tr><td><b>Press REC to edit the song</b></td><td>That tool changes the song. Turn on edit mode with <kbd>Rec</kbd> first.</td></tr>
@@ -922,7 +942,7 @@
 
 <!-- ============================================================ 11 -->
 <section>
-  <h2>19 · Quick reference</h2>
+  <h2>20 · Quick reference</h2>
   <table>
     <tr><th>Do this</th><th>Press</th></tr>
     <tr><td>Open / close song tools</td><td><kbd>Insert</kbd> on the Song screen</td></tr>
@@ -946,6 +966,7 @@
     <tr><td>CRAFTY: play a wavetable file</td><td>Oscillators page, <b>Table 1 File</b> / <b>Table 2 File</b> (Shift + turn: a folder at a time)</td></tr>
     <tr><td>Random patch, keep the wavetables</td><td>Hold <b>Shift</b>, press <b>Random Patch</b></td></tr>
     <tr><td>Random names</td><td>The keyboard's random name now always starts <b>TG - </b>, with each word capitalised (<i>TG - Nonchalant Cheese</i>, <i>TG - Cake-Burn</i>)</td></tr>
+    <tr><td>Capture what you played</td><td>Pattern editor, <b>More</b> to page 3, <b>Capture Played</b></td></tr>
     <tr><td>Random synth patch</td><td>Synth patch editor, <b>Random Patch</b> (press again for another)</td></tr>
     <tr><td>SH-101 bass / Juno / DX7</td><td>Instrument screen, a SYN slot, model <b>SUB</b>, <b>JUNO</b> or <b>DX7</b></td></tr>
     <tr><td>Load DX7 banks</td><td>Copy <code>.syx</code> banks to <code>/DX7</code> on the SD card, then choose DX7</td></tr>

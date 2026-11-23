@@ -1574,7 +1574,7 @@ void cPatternEditor::showActionButtonPage3Labels()
     display.setControlText(label[0], "Pattern");
     display.setControlText(label[1], "Track");
     display.setControlText(label[2], "Track");
-    display.setControlText(label[3], "");
+    display.setControlText(label[3], "Capture");
     display.setControlText(label[4], "");
     display.setControlText(label[5], "");
     display.setControlText(label[6], "");
@@ -1583,7 +1583,7 @@ void cPatternEditor::showActionButtonPage3Labels()
     display.setControlText2(label[0], "Name");
     display.setControlText2(label[1], "Name");
     display.setControlText2(label[2], "Colour");
-    display.setControlText2(label[3], "");
+    display.setControlText2(label[3], "Played");
     display.setControlText2(label[4], "");
     display.setControlText2(label[5], "");
     display.setControlText2(label[6], "");
@@ -1616,7 +1616,7 @@ void cPatternEditor::showActionButtonPage3Labels()
           label[i],
           controlStyleCenterX | controlStyleCenterY | controlStyleFont3 | controlStyleShow |
             (i == 7 ? controlStyleSpecialFx2
-                    : (i < 3 ? (display.getTheme().patternEditorBottomButtonsLines
+                    : (i < 4 ? (display.getTheme().patternEditorBottomButtonsLines
                                   ? controlStyleSpecialFx
                                   : 0)
                              : 0)));

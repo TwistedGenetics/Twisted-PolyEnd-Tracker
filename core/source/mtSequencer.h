@@ -631,6 +631,21 @@ class Sequencer
     bool isPlay(void);
     bool isRec(void);
 
+    // Twisted: CAPTURE (like Ableton's Capture MIDI): the notes you play are kept, and Capture writes them into
+    // the pattern (mtSequencerCapture.cpp)
+    struct CaptureResult
+    {
+        int written = 0;   // notes written
+        int skipped = 0;   // no free step for them
+        int dropped = 0;   // past the end of the pattern
+        bool nothing = false;
+        bool otherPattern = false; // played over another pattern
+        uint8_t pattern = 0;
+    };
+    void twCaptureLog(bool on, uint8_t note, int8_t velocity, uint8_t channel);
+    void twCapturePoll();
+    CaptureResult twCapture(uint8_t track, uint8_t cursorStep);
+
     uint8_t isRecArmedOnTrack(uint8_t track);
     void toogleRecArmedOnTrack(uint8_t track);
     int8_t getSingleArmedTrack();

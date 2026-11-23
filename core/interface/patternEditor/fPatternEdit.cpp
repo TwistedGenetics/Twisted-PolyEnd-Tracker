@@ -50,6 +50,7 @@ static void functNamePattern();
 static void functNameTrack();
 static void functTrackColour();
 static void functTrackColourDelete();
+static void functCapture();
 static void functTrackColourCancel();
 static void functPickTrackColour0();
 static void functPickTrackColour1();
@@ -4139,6 +4140,31 @@ static void functCopyPattern()
 // ##############################################################################################
 // ###############################          Paste pattern	   #################################
 // ##############################################################################################
+// Twisted: CAPTURE: what you just played (pads or MIDI) into the pattern (mtSequencerCapture.cpp)
+static void functCapture()
+{
+    const auto r = sequencer.twCapture(PTE->trackerPattern.actualTrack, PTE->trackerPattern.actualStep);
+    static char line1[40], line2[40];
+    if (r.nothing)
+    {
+        mtPopups.show(0, "Nothing to capture", "Play something first");
+        return;
+    }
+    if (r.otherPattern)
+    {
+        snprintf(line2, sizeof(line2), "Open pattern %d to capture it", r.pattern);
+        mtPopups.show(0, "Played over another pattern", line2);
+        return;
+    }
+    snprintf(line1, sizeof(line1), "Captured %d note%s", r.written, r.written == 1 ? "" : "s");
+    if (r.skipped || r.dropped)
+        snprintf(line2, sizeof(line2), "%d skipped (no room)", r.skipped + r.dropped);
+    else
+        line2[0] = 0;
+    mtPopups.show(0, line1, line2);
+    PTE->refreshPattern();
+}
+
 static void functPastePattern()
 {
     newFileManager.storePatternUndoRevision();
@@ -5266,6 +5292,7 @@ void cPatternEditor::setActionButtonPage3Funct()
     ip->setButtonObj(interfaceButton0, buttonPress, functNamePattern);
     ip->setButtonObj(interfaceButton1, buttonPress, functNameTrack);
     ip->setButtonObj(interfaceButton2, buttonPress, functTrackColour);
+    ip->setButtonObj(interfaceButton3, buttonPress, functCapture);
 
     ip->setButtonObj(interfaceButton7, buttonPress, functNextActionButtonPage);
 }
