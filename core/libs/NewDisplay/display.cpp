@@ -78,6 +78,8 @@
 #include "images/chip_mini_nomark_80x28_L2.h"
 #include "images/reese_med_108x40_L2.h"
 #include "images/reese_mini_nomark_80x28_L2.h"
+#include "images/crafty_med_108x40_L2.h"
+#include "images/crafty_mini_nomark_80x28_L2.h"
 
 #endif
 
@@ -214,6 +216,8 @@ const strBitmap bitmaps[displayBitmapsCount] = {
     { chip_med_108x40_L2, 127700, 1080, 108, 40, L2, 27 },
     { reese_mini_nomark_80x28_L2, 128800, 560, 80, 28, L2, 20 }, // Twisted
     { reese_med_108x40_L2, 129400, 1080, 108, 40, L2, 27 },
+    { crafty_mini_nomark_80x28_L2, 130500, 560, 80, 28, L2, 20 },
+    { crafty_med_108x40_L2, 131100, 1080, 108, 40, L2, 27 },
 
 #endif
 };

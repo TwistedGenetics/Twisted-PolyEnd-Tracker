@@ -40,8 +40,9 @@ enum class InstrumentTypeId
     kDrumSynth,
     kShapingSynth,
     kChiptuneSynth,
-    kReeseSynth, // Twisted: REESE
-    kLastSynth = kReeseSynth,
+    kReeseSynth,  // Twisted: REESE
+    kCraftySynth, // Twisted: CRAFTY
+    kLastSynth = kCraftySynth,
     kDelay = 1000,
     kReverb,
 };

@@ -82,6 +82,8 @@ enum enDisplayBitmaps
     kBitmapCHIP,
     kBitmapMiniREESE, // Twisted
     kBitmapREESE,
+    kBitmapMiniCRAFTY,
+    kBitmapCRAFTY,
 
 #endif
 

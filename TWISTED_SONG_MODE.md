@@ -170,6 +170,15 @@ Code: `core/FileManager/fileManagerBrowse.cpp`, `platforms/*/SD.cpp`
   `docs/images/twisted_splash_source.png` by `tools/make_splash.py` (720x396, PALETTED565), uploaded to
   RAM_G 690000 at boot (in 32 KB pieces) and drawn by `startScreen.cpp` on white.
 
+## CRAFTY synth (v1.6.0)
+
+- Crafty Synth's own C engine (`core/synth/crafty`, from TwistedGenetics/Crafty-Synth 0.10 @ 5ed5069, with its
+  generated `cr_presets.h` / `cr_wavetables.h`), built by the wrappers in `core/libs/crafty` (FEATURE_SYNTH only).
+- `core/synth/engines/CraftySynthVoice.cpp`: one SDK parameter per Crafty patch value plus `Preset`; continuous ones
+  are offsets from the preset, stepped ones pick "Preset" or a value. Notes go straight to Crafty's own held-note
+  stack (legato, glide); pitch bend as MIDI.
+- Each `cr_inst_t` is ~190 KB: a pool of four in external RAM, taken from `SAMPLE_MEMORY_SIZE` (768 KB less).
+
 ## Files
 
 | File | What |

@@ -4,6 +4,7 @@
 #include "PolySynth/sdk/InstrumentTypeRegistry.h"
 #include "engines/ChiptuneSynthVoice.h"
 #include "engines/ReeseSynthVoice.h"
+#include "engines/CraftySynthVoice.h"
 
 namespace polysynth
 {
@@ -36,6 +37,8 @@ void InstrumentTypeRegistry::registerInstrumentTypes(
                                createChiptuneSynth());
     // Twisted: REESE (DREADNOUGHT's Reese bass)
     registry.addInstrumentType(static_cast<int>(InstrumentTypeId::kReeseSynth), createReeseSynth());
+    // Twisted: CRAFTY (Crafty Synth, the FM-1's CRAFTsynth 2.0-style wavetable synth)
+    registry.addInstrumentType(static_cast<int>(InstrumentTypeId::kCraftySynth), createCraftySynth());
 }
 
 } // namespace polysynth
