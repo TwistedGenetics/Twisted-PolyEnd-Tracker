@@ -124,8 +124,11 @@ enum class CraftyParamId : int
     kEra,
     kCrush,
     kOtt,
+    kSubLvl, // 0.12: the sub oscillator
+    kSubOct,
+    kSubWave,
 };
-static_assert(static_cast<int>(CraftyParamId::kOtt) == CR_NP, "one parameter per Crafty patch value");
+static_assert(static_cast<int>(CraftyParamId::kSubWave) == CR_NP, "one parameter per Crafty patch value");
 
 // ------------------------------------------------------------------ the instance pool (external RAM)
 constexpr int kPoolSize = 4;
@@ -194,6 +197,8 @@ int choiceCount(int id)
         case CR_K_FTYPE: return 12;
         case CR_K_VMODE: return 6;
         case CR_K_ERA: return 6;
+        case CR_K_SUBOCT: return 2;
+        case CR_K_SUBWAVE: return 3;
         default: return 0;
     }
 }
@@ -793,6 +798,7 @@ void CraftySynthVoice::createMetadata(const Patch& /*patch*/, Patch::Metadata& m
     layout.sections.push_back(section("Oscillators", "Osc",
                                       { CR_W1BANK, CR_W1POS, CR_W2BANK, CR_W2POS, CR_MIX, CR_SPREAD }));
     layout.sections.push_back(section("Oscillator Mod", "Osc Mod", { CR_OMMODE, CR_OMAMT, CR_BMODE, CR_BAMT }));
+    layout.sections.push_back(section("Sub Oscillator", "Sub", { CR_SUBLVL, CR_SUBOCT, CR_SUBWAVE }));
     layout.sections.push_back(section("Filter", "Filter", { CR_FTYPE, CR_CUT, CR_RES, CR_MORPH, CR_FEGAMT }));
     layout.sections.push_back(section("Filter Envelope", "Filt Env", { CR_FA, CR_FD, CR_FS, CR_FR }));
     layout.sections.push_back(section("Amp Envelope", "Amp Env", { CR_AA, CR_AD, CR_AS, CR_AR, CR_AEGAMT }));

@@ -21,8 +21,22 @@ static const int8_t DEST_P[CR_ND] = {
     CR_BAMT, CR_VMIX, CR_CHMIX, CR_PHMIX, CR_CRUSH, CR_OTT,
     CR_W1BANK, CR_W2BANK, CR_OMMODE, CR_TUNE, CR_FINE, CR_OCT, CR_L1MODE, CR_L1SYNC, CR_L2MODE, CR_L2SYNC, CR_DSYNC,
     CR_DEP3, CR_DEP4, CR_DEP5, CR_DEP6, CR_DEP7, CR_ARP, CR_TEMPO, CR_ARPRATE, CR_BMODE, CR_FTYPE, CR_VMODE, CR_VSIZE,
-    CR_VDECAY, CR_VWARP, CR_VDENS, CR_VMOD, CR_CHRATE, CR_PHRATE, CR_ERA};
+    CR_VDECAY, CR_VWARP, CR_VDENS, CR_VMOD, CR_CHRATE, CR_PHRATE, CR_ERA, CR_SUBLVL, CR_SUBOCT, CR_SUBWAVE};
 _Static_assert(sizeof DEST_P / sizeof DEST_P[0] == CR_ND, "a parameter for every destination");
+
+/* polyBLEP: the correction that takes the step out of an edge at phase 0 (the sub's square) */
+static float blep(float t, float dt)
+{
+    if (t < dt) {
+        t /= dt;
+        return t + t - t * t - 1.f;
+    }
+    if (t > 1.f - dt) {
+        t = (t - 1.f) / dt;
+        return t * t + t + t + 1.f;
+    }
+    return 0.f;
+}
 
 /* a destination's value after the matrix as a patch value 0..127 (the stepped ones: banks, modes, types) */
 static uint32_t er(const cr_synth_t *s, uint32_t d) { return (uint32_t)(s->eff[d] * 127.f + 0.5f); }
@@ -397,6 +411,15 @@ static void control(cr_synth_t *s)
             p->lv1 = mip(p->inc1);
             p->lv2 = mip(p->inc2);
         }
+        /* the sub: one or two octaves under OSC A's note (its middle, without the spread), its own wave */
+        {
+            float lv = e[CR_D_SUBLVL];
+            s->sub_inc = note_hz(n1 - 12.f * (float)(1u + cr_band(er(s, CR_D_SUBOCT), 2))) * (1.f / FS);
+            if (s->sub_inc > 0.25f)
+                s->sub_inc = 0.25f;
+            s->sub_lv = lv * lv * 0.9f;
+            s->sub_w = cr_band(er(s, CR_D_SUBWAVE), 3);
+        }
     }
     /* the filter (its type, cutoff with the filter EG, resonance, morph) */
     {
@@ -637,6 +660,23 @@ void cr_synth_render(cr_synth_t *s, float *lr, uint32_t n)
                 sum += x + (w2 - x) * mix;
             }
             y = np > 1u ? sum * 0.5f : sum;
+            if (s->sub_lv > 0.f) {             /* the sub, before the filter: it is part of the sound */
+                float f = s->sub_p, dt = s->sub_inc, v;
+                s->sub_p += dt;
+                if (s->sub_p >= 1.f)
+                    s->sub_p -= 1.f;
+                if (s->sub_w == 0u)
+                    v = cr_sin_turn(f);
+                else if (s->sub_w == 1u)
+                    v = 1.f - 4.f * (f < 0.5f ? 0.5f - f : f - 0.5f);
+                else {                         /* a square, its two edges smoothed (polyBLEP) */
+                    float g = f + 0.5f;
+                    g -= g >= 1.f ? 1.f : 0.f;
+                    v = (f < 0.5f ? 1.f : -1.f) + blep(f, dt) - blep(g, dt);
+                    v *= 0.7f;                 /* as loud as the sine */
+                }
+                y += v * s->sub_lv;
+            }
             /* the filter (its type: cr_filter.c) */
             y = cr_filt_run(&s->filt, y);
             /* the distortion: a waveshaping overdrive */

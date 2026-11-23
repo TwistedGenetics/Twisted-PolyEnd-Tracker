@@ -24,6 +24,8 @@ enum {
     CR_BMODE, CR_BAMT, CR_FTYPE,
     CR_VMODE, CR_VSIZE, CR_VDECAY, CR_VMIX, CR_VWARP, CR_VDENS, CR_VMOD,
     CR_CHMIX, CR_CHRATE, CR_PHMIX, CR_PHRATE, CR_ERA, CR_CRUSH, CR_OTT,
+    /* 0.12: the sub oscillator (an older patch's zeros: off, -1 octave, sine) */
+    CR_SUBLVL, CR_SUBOCT, CR_SUBWAVE,
     CR_NP
 };
 #define CR_NP_MAX 96u
@@ -43,7 +45,8 @@ enum {
     CR_D_W1BANK, CR_D_W2BANK, CR_D_OMMODE, CR_D_TUNE, CR_D_FINE, CR_D_OCT, CR_D_L1MODE, CR_D_L1SYNC, CR_D_L2MODE,
     CR_D_L2SYNC, CR_D_DSYNC, CR_D_NOTEDEP, CR_D_VELODEP, CR_D_MODWDEP, CR_D_EXPRDEP, CR_D_AFTTDEP, CR_D_ARP,
     CR_D_TEMPO, CR_D_ARPRATE, CR_D_BMODE, CR_D_FTYPE, CR_D_VMODE, CR_D_VSIZE, CR_D_VDECAY, CR_D_VWARP, CR_D_VDENS,
-    CR_D_VMOD, CR_D_CHRATE, CR_D_PHRATE, CR_D_ERA, CR_ND
+    CR_D_VMOD, CR_D_CHRATE, CR_D_PHRATE, CR_D_ERA,
+    CR_D_SUBLVL, CR_D_SUBOCT, CR_D_SUBWAVE, CR_ND
 };
 
 /* the 16 oscillator modifiers (CR_OMMODE: 0..127 in 16 bands of 8, as the CRAFTsynth's CC 41) */
@@ -58,7 +61,8 @@ enum { CR_OM_PM, CR_OM_WSYNC, CR_OM_RING, CR_OM_TFOLD, CR_OM_DEREZ, CR_OM_ROR, C
 /* how a parameter is shown and stepped */
 enum { CR_K_NUM, CR_K_BIP, CR_K_TIME, CR_K_BANK, CR_K_OMMODE, CR_K_SPREAD, CR_K_SEMI, CR_K_CENT, CR_K_OCT,
        CR_K_GLIDE, CR_K_HZ, CR_K_LSHAPE, CR_K_LMODE, CR_K_ONOFF, CR_K_DTIME, CR_K_DEST, CR_K_MORPH, CR_K_PCT,
-       CR_K_TEMPO, CR_K_ARPRATE, CR_K_LRATE1, CR_K_LRATE2, CR_K_MIX, CR_K_BMODE, CR_K_FTYPE, CR_K_VMODE, CR_K_ERA };
+       CR_K_TEMPO, CR_K_ARPRATE, CR_K_LRATE1, CR_K_LRATE2, CR_K_MIX, CR_K_BMODE, CR_K_FTYPE, CR_K_VMODE, CR_K_ERA,
+       CR_K_SUBOCT, CR_K_SUBWAVE };
 
 typedef struct {
     uint8_t cc, kind, def;
@@ -105,6 +109,8 @@ extern const char *const CR_BMODE_NAME[5];
 extern const char *const CR_FTYPE_NAME[12];
 extern const char *const CR_VMODE_NAME[6];
 extern const char *const CR_ERA_NAME[6];
+extern const char *const CR_SUBOCT_NAME[2];
+extern const char *const CR_SUBWAVE_NAME[3];
 uint32_t cr_band(uint32_t v, uint32_t n);              /* a 0..127 value as one of n choices */
 uint32_t cr_band_val(uint32_t i, uint32_t n);          /* and back (the middle of its band) */
 int cr_patch_check(cr_patch_t *p);                     /* 0 = usable (values clamped); -1 = not a patch */

@@ -172,7 +172,7 @@ Code: `core/FileManager/fileManagerBrowse.cpp`, `platforms/*/SD.cpp`
 
 ## CRAFTY synth (v1.6.0)
 
-- Crafty Synth's own C engine (`core/synth/crafty`, from TwistedGenetics/Crafty-Synth 0.10 @ 5ed5069, with its
+- Crafty Synth's own C engine (`core/synth/crafty`, from TwistedGenetics/Crafty-Synth 0.12 @ 2c51b2b (v1.11.0: the sub oscillator), with its
   generated `cr_presets.h` / `cr_wavetables.h`), built by the wrappers in `core/libs/crafty` (FEATURE_SYNTH only).
 - `core/synth/engines/CraftySynthVoice.cpp`: one SDK parameter per Crafty patch value plus `Preset`; continuous ones
   are offsets from the preset, stepped ones pick "Preset" or a value. Notes go straight to Crafty's own held-note

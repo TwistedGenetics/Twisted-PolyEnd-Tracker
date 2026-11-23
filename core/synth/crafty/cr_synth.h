@@ -54,6 +54,8 @@ typedef struct {
     cr_filt_t filt;
     cr_fx_t fx;
     float amp, amp_prev, noise_lp, dist_g, dist_mix;
+    float sub_p, sub_inc, sub_lv;                 /* the sub oscillator (0.12): phase, increment, level */
+    uint32_t sub_w;                               /* its wave: 0 sine, 1 triangle, 2 square */
     int16_t *dl;
     uint32_t dl_w;
     float dl_pos, dl_target, dl_fb, dl_mix, dl_lp, dl_hp;

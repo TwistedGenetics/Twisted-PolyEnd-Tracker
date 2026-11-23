@@ -85,6 +85,9 @@ const cr_pinfo_t CR_P[CR_NP] = {
     [CR_ERA] = {81, CR_K_ERA, 0, "ERA"},
     [CR_CRUSH] = {82, CR_K_PCT, 60, "CRUSH"},
     [CR_OTT] = {83, CR_K_PCT, 0, "OTT"},
+    [CR_SUBLVL] = {84, CR_K_PCT, 0, "SUB LVL"},
+    [CR_SUBOCT] = {85, CR_K_SUBOCT, 0, "SUB OCT"},
+    [CR_SUBWAVE] = {86, CR_K_SUBWAVE, 0, "SUB WAVE"},
 };
 
 const char *const CR_BMODE_NAME[5] = {"FM FROM A", "PM FROM A", "SYNC TO A", "RING WITH A", "WAVEFOLD"};
@@ -92,6 +95,8 @@ const char *const CR_FTYPE_NAME[12] = {"SVF", "LADDER", "MS-20", "TB-303", "SEM"
                                        "FORMANT", "COMB +/-", "PHASER", "DUAL PEAK", "DECIMATOR"};
 const char *const CR_VMODE_NAME[6] = {"ROOM", "HALL", "HALO", "SWELL", "ABYSS", "DUB"};
 const char *const CR_ERA_NAME[6] = {"OFF", "SP-1200", "MPC60", "S950", "S1000", "AMIGA"};
+const char *const CR_SUBOCT_NAME[2] = {"-1 OCT", "-2 OCT"};
+const char *const CR_SUBWAVE_NAME[3] = {"SINE", "TRIANGLE", "SQUARE"};
 
 uint32_t cr_band(uint32_t v, uint32_t n) { return ((v & 0x7Fu) * n) >> 7; }
 uint32_t cr_band_val(uint32_t i, uint32_t n) { return i >= n ? 127u : (i * 128u + 64u) / n; }
@@ -103,7 +108,7 @@ const char *const CR_DEST_NAME[CR_ND] = {
     "DLY FB", "SPREAD", "GLIDE", "L1 DEPTH", "L2 DEPTH", "MEG DEP", "B MOD", "REVERB", "CHORUS", "PHASER", "CRUSH",
     "OTT", "BANK 1", "BANK 2", "MOD MODE", "TUNE", "FINE", "OCTAVE", "L1 MODE", "L1 SYNC", "L2 MODE", "L2 SYNC",
     "DLY SYNC", "NOTE DEP", "VELO DEP", "MODW DEP", "EXPR DEP", "AFTT DEP", "ARP", "TEMPO", "ARP RATE", "B MODE",
-    "FLT TYPE", "VRB MODE", "VRB SIZE", "VRB DCAY", "VRB WARP", "VRB DENS", "VRB MOD", "CH RATE", "PH RATE", "ERA"};
+    "FLT TYPE", "VRB MODE", "VRB SIZE", "VRB DCAY", "VRB WARP", "VRB DENS", "VRB MOD", "CH RATE", "PH RATE", "ERA", "SUB LVL", "SUB OCT", "SUB WAVE"};
 const char *const CR_SRC_NAME[CR_NSRC] = {"LFO 1", "LFO 2", "MOD EG", "NOTE", "VELO", "MOD WHL", "EXPR", "AFTTCH"};
 const char *const CR_OM_NAME[CR_NOM] = {
     "PHASE MOD", "WINDOW SYNC", "RING MOD", "TRI FOLD", "DE-REZ", "RISE/RUN", "GLITCH SINE", "WINDOW AMP",

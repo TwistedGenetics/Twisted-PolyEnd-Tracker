@@ -202,7 +202,7 @@
     <b>Firmware:</b> Twisted PolyEnd Tracker, based on Polyend Tracker Community Edition 1.0.0<br>
     <b>For:</b> Tracker+ (the original Tracker builds too; the Tracker Mini has no song tools)<br>
     <b>Repository:</b> github.com/TwistedGenetics/Twisted-PolyEnd-Tracker<br>
-    <b>Manual version:</b> 2.2 · November 2026
+    <b>Manual version:</b> 2.3 · November 2026
   </div>
 </div>
 
@@ -772,6 +772,7 @@
     <tr><td>Preset</td><td>Preset, Volume, Tune, Fine, Octave, Glide</td></tr>
     <tr><td>Oscillators</td><td>Bank 1, Wave 1, Bank 2, Wave 2, Mix, Spread (unison or chords)</td></tr>
     <tr><td>Oscillator Mod</td><td>The 16 oscillator modifiers and their amount; OSC B's modifier</td></tr>
+    <tr><td>Sub Oscillator</td><td><b>Sub Lvl</b>, <b>Sub Oct</b> (-1 or -2 octaves under OSC A) and <b>Sub Wave</b> (sine, triangle, square), mixed in before the filter. New in Crafty Synth 0.12.</td></tr>
     <tr><td>Filter</td><td>Type (12), Cutoff, Resonance, Morph, Filter EG amount</td></tr>
     <tr><td>Envelopes</td><td>Filter, Amp and Mod envelopes</td></tr>
     <tr><td>LFO 1 / LFO 2</td><td>Rate, shape, mode, sync</td></tr>
@@ -780,6 +781,7 @@
     <tr><td>Effects</td><td>Distortion and delay; the reverb; chorus, phaser, EraCrush and OTT</td></tr>
   </table>
   <p>The six default macros are Cutoff, Wave Position, Osc Mod, Resonance, Distortion and Reverb.</p>
+  <p>The sub is also a mod-matrix destination (Sub Lvl, Sub Oct, Sub Wave). The basses use it: Warm Bass, Sub Bass, Reese, Roller, Dread, Donk, Wobble, Min Reese, Neuro and Dub Seq. Older user presets and projects load with the sub off.</p>
   <div class="note"><b>Memory</b>Each CRAFTY instrument needs about 190 KB for its wavetables and effects, plus 190 KB shared for your user banks. To make room, the sample memory is 960 KB smaller than the stock firmware's (about 59 MB). A project that filled the sample memory to the last few hundred KB may not fit all its samples any more.</div>
   <h3>Your own wavetables</h3>
   <p>CRAFTY reads wavetables from a folder on the SD card, like the Crafty Synth editor's Serum import.</p>

@@ -194,6 +194,14 @@ void cr_param_text(const cr_patch_t *p, uint32_t id, char *b, int lng, const cha
         break;
     }
     case CR_K_VMODE: tx_cpy(b, CR_VMODE_NAME[cr_band(v, 6)]); break;
+    case CR_K_SUBOCT:
+        tx_cpy(b, CR_SUBOCT_NAME[cr_band(v, 2)]);
+        break;
+    case CR_K_SUBWAVE: {
+        static const char *const SH[3] = {"SINE", "TRI", "SQUARE"};
+        tx_cpy(b, lng ? CR_SUBWAVE_NAME[cr_band(v, 3)] : SH[cr_band(v, 3)]);
+        break;
+    }
     case CR_K_ERA: {
         static const char *const SH[6] = {"OFF", "SP12", "MPC", "S950", "S1K", "AMIGA"};
         tx_cpy(b, lng ? CR_ERA_NAME[cr_band(v, 6)] : SH[cr_band(v, 6)]);
@@ -210,6 +218,6 @@ static const char *const TX_PAGE[CR_NP] = {
     "MOD EG", "LFO 1", "LFO 1", "LFO 1", "LFO 1", "LFO 2", "LFO 2", "LFO 2", "LFO 2", "", "", "DELAY", "DELAY",
     "DELAY", "", "LFO 1", "LFO 2", "MOD EG", "NOTE", "VELO", "MOD WHL", "EXPR", "AFTTCH", "LFO 1", "LFO 2",
     "MOD EG", "NOTE", "VELO", "MOD WHL", "EXPR", "AFTTCH", "", "", "ARP", "", "", "FILTER", "REVERB", "REVERB",
-    "REVERB", "", "REVERB", "REVERB", "REVERB", "", "", "", "", "", "", ""};
+    "REVERB", "", "REVERB", "REVERB", "REVERB", "", "", "", "", "", "", "", "", "", ""};
 _Static_assert(sizeof TX_PAGE / sizeof TX_PAGE[0] == CR_NP, "a page for every parameter");
 const char *cr_param_page(uint32_t id) { return id < CR_NP ? TX_PAGE[id] : ""; }
