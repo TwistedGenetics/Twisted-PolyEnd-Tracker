@@ -202,7 +202,7 @@
     <b>Firmware:</b> Twisted PolyEnd Tracker, based on Polyend Tracker Community Edition 1.0.0<br>
     <b>For:</b> Tracker+ (the original Tracker builds too; the Tracker Mini has no song tools)<br>
     <b>Repository:</b> github.com/TwistedGenetics/Twisted-PolyEnd-Tracker<br>
-    <b>Manual version:</b> 1.5 · November 2026
+    <b>Manual version:</b> 1.6 · November 2026
   </div>
 </div>
 
@@ -222,9 +222,10 @@
     <li><span class="n">10</span> Akaizer timestretch (Sample Editor)</li>
     <li><span class="n">11</span> Akaizer play mode and FX commands</li>
     <li><span class="n">12</span> Faster sample browser</li>
-    <li><span class="n">13</span> Projects, saving and compatibility</li>
-    <li><span class="n">14</span> Messages and troubleshooting</li>
-    <li><span class="n">15</span> Quick reference</li>
+    <li><span class="n">13</span> Crop to New (Sample Editor)</li>
+    <li><span class="n">14</span> Projects, saving and compatibility</li>
+    <li><span class="n">15</span> Messages and troubleshooting</li>
+    <li><span class="n">16</span> Quick reference</li>
   </ol>
 </section>
 
@@ -241,8 +242,9 @@
     <tr><td><b>Linked variations</b></td><td>A copy that keeps following the original on every track you haven't changed.</td></tr>
     <tr><td><b>Pattern names</b></td><td>Name a pattern from the song view. It's the same name the pattern editor shows, so a name set in either place shows in both.</td></tr>
     <tr><td><b>Akaizer</b></td><td>The classic Akaizer timestretch: as a Sample Editor effect, as a live <b>Akaizer play mode</b> for instruments, and as two FX commands (<code>K</code> Stretch, <code>Y</code> Cycle) that change it per step.</td></tr>
-    <tr><td><b>Block colours</b></td><td>Colour-code the blocks in the song view with 8 colours (drums blue, bass red…). Colours move with blocks you copy.</td></tr>
+    <tr><td><b>Block colours</b></td><td>Colour-code the blocks in the song view with 8 colours (drums blue, bass red…). Colours move with blocks you copy. The pattern editor shows the same colour behind each track name, and you can set it there too.</td></tr>
     <tr><td><b>Faster sample browser</b></td><td>Folders open much faster, and a folder of up to 499 samples is shown as one list instead of being split into groups of 99.</td></tr>
+    <tr><td><b>Crop to New</b></td><td>In the Sample Editor, copy the part between Start and End into a new instrument, leaving the original untouched.</td></tr>
   </table>
   <div class="note"><b>Your projects stay safe</b>Sections, variation links and block colours are kept in a separate file inside the project. Stock Polyend firmware ignores that file, so it still opens your projects. It just won't show the sections or colours, or keep variations linked.</div>
 </section>
@@ -541,6 +543,20 @@
     <tr><td class="key">F3</td><td><span class="swatch c3"></span>Yellow</td><td class="key">F7</td><td><span class="swatch c7"></span>Purple</td></tr>
     <tr><td class="key">F4</td><td><span class="swatch c4"></span>Green</td><td class="key">F8</td><td><span class="swatch c8"></span>Pink</td></tr>
   </table>
+  <h3>Colours in the pattern editor</h3>
+  <p>The pattern editor shows each track's colour as a bar behind the track name at the top of the column. It's the same colour as that track's block in the song view, so a colour set in either place shows in both.</p>
+  <ul>
+    <li>The name is written in black on the colour. A muted track shows a darker colour with white text.</li>
+    <li>Track names only show when <b>Pattern info</b> in Config is set to show them (the default).</li>
+  </ul>
+  <h3>Colour a track from the pattern editor</h3>
+  <ol class="steps">
+    <li>Put the cursor on the track. To colour several tracks at once, select across them first.</li>
+    <li>Press <kbd>F8</kbd> (More) until the page with <b>Pattern Name</b> and <b>Track Name</b> shows, then press <kbd>F3</kbd> (<b>Track Colour</b>).</li>
+    <li>Press <kbd>F1</kbd>–<kbd>F8</kbd> for the colour. The track's current colour is marked <b>(now)</b>. <kbd>Delete</kbd> removes the colour, <kbd>Insert</kbd> cancels.</li>
+  </ol>
+  <p>This colours the track in the <b>current pattern</b>, exactly like colouring its block in the song view.</p>
+
   <div class="note"><b>Tip</b>Pick a scheme and stick to it in every project, for example blue drums, red bass, orange breaks, purple pads, yellow FX, green leads. A long song then reads like a map.</div>
 </section>
 
@@ -649,9 +665,28 @@
   <div class="note"><b>Tips for the fastest browsing</b>Keep each folder under 499 samples. Sort samples into folders (Breaks, Bass, FX…) rather than one huge folder. A fast, freshly formatted SD card helps too.</div>
 </section>
 
+<!-- ============================================================ crop to new -->
+<section>
+  <h2>13 · Crop to New (Sample Editor)</h2>
+  <p><b>Crop to New</b> copies part of a sample into a new instrument. The original stays as it is, so you can cut several hits or loops out of one long recording or break.</p>
+  <ol class="steps">
+    <li>Open the sample in the <b>Sample Editor</b>.</li>
+    <li>Set <kbd>F1</kbd> <b>Start</b> and <kbd>F2</kbd> <b>End</b> around the part you want. Use <kbd>F3</kbd> Zoom for precise points.</li>
+    <li>Press <kbd>F5</kbd> <b>Crop to New</b>.</li>
+  </ol>
+  <ul>
+    <li>The part goes into the <b>first empty instrument slot</b>. A message tells you which one.</li>
+    <li>The new instrument is named after the original with <code>crop</code> on the end, and starts with default settings.</li>
+    <li>The Sample Editor then opens the new sample, ready for more editing.</li>
+    <li>Any effects you've already applied to the original are kept. They're saved before the editor switches over.</li>
+    <li>With Start at the beginning and End at the end, Crop to New simply duplicates the whole sample.</li>
+  </ul>
+  <div class="note"><b>Chopping a break</b>Set Start and End around the first hit, press <kbd>F5</kbd>. The editor jumps to the new sample, so pick the original again with the <kbd>Instr</kbd> button, move the points to the next hit and repeat.</div>
+</section>
+
 <!-- ============================================================ 10 -->
 <section>
-  <h2>13 · Projects, saving and compatibility</h2>
+  <h2>14 · Projects, saving and compatibility</h2>
   <ul>
     <li>Sections, variation links and block colours are saved in the file <code>patterns/twistedSong</code> inside each project, next to the pattern files.</li>
     <li>They're saved and opened with the project as usual. You don't need to do anything extra.</li>
@@ -670,7 +705,7 @@
 
 <!-- ============================================================ 10 -->
 <section>
-  <h2>14 · Messages and troubleshooting</h2>
+  <h2>15 · Messages and troubleshooting</h2>
   <table>
     <tr><th>Message or problem</th><th>Meaning / what to do</th></tr>
     <tr><td><b>Press REC to edit the song</b></td><td>That tool changes the song. Turn on edit mode with <kbd>Rec</kbd> first.</td></tr>
@@ -688,6 +723,10 @@
     <tr><td>A block I coloured shows no colour</td><td>Only blocks with notes are coloured. Add notes to that track and the colour appears.</td></tr>
     <tr><td>Colouring one slot coloured others too</td><td>Those slots play the same pattern. Use Clone In Place (<kbd>F5</kbd>) first to give the slot its own pattern.</td></tr>
     <tr><td>A folder still shows as <code>(1-499)</code>, <code>(500-998)</code>…</td><td>That folder has more than 499 samples. Split it into smaller folders to see it as one list.</td></tr>
+    <tr><td><b>No empty instrument slot</b></td><td>Crop to New needs a free sample instrument slot. Delete an instrument you don't use.</td></tr>
+    <tr><td><b>Not enough sample memory</b></td><td>The cropped part won't fit in the remaining sample memory. Free some memory, or crop a shorter part.</td></tr>
+    <tr><td><b>Set Start and End first</b></td><td>Start and End are on top of each other, so there's nothing to copy.</td></tr>
+    <tr><td>No colour behind the track names</td><td>Only coloured tracks show one. If no names show at all, set <b>Pattern info</b> in Config back to show them.</td></tr>
     <tr><td>Insert doesn't open the tools</td><td>Check that you're running the Twisted firmware and are on the Song screen. The Tracker Mini has no song tools.</td></tr>
   </table>
   <p>Found a bug? Open an issue on the repository with the steps that cause it.</p>
@@ -695,7 +734,7 @@
 
 <!-- ============================================================ 11 -->
 <section>
-  <h2>15 · Quick reference</h2>
+  <h2>16 · Quick reference</h2>
   <table>
     <tr><th>Do this</th><th>Press</th></tr>
     <tr><td>Open / close song tools</td><td><kbd>Insert</kbd> on the Song screen</td></tr>
@@ -714,6 +753,8 @@
     <tr><td>Solo a track</td><td>Cursor on the track in the grid, <kbd>Insert</kbd>, <kbd>F8</kbd> (again to end)</td></tr>
     <tr><td>Colour blocks</td><td>Select blocks, <kbd>Insert</kbd>, <kbd>F7</kbd>, pick <kbd>F1</kbd>–<kbd>F8</kbd></td></tr>
     <tr><td>Remove colour</td><td>Select blocks, <kbd>Insert</kbd>, <kbd>F7</kbd>, <kbd>Delete</kbd></td></tr>
+    <tr><td>Colour a track in the pattern editor</td><td><kbd>F8</kbd> (More) to the Name page, <kbd>F3</kbd>, pick <kbd>F1</kbd>–<kbd>F8</kbd></td></tr>
+    <tr><td>Copy part of a sample to a new instrument</td><td>Sample Editor, set Start / End, <kbd>F5</kbd> Crop to New</td></tr>
     <tr><td>Back to normal song buttons</td><td><kbd>Insert</kbd></td></tr>
   </table>
 

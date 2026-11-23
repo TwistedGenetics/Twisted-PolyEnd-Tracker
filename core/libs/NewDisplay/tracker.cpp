@@ -918,6 +918,13 @@ void cTracker::drawRowNumbers(uint16_t* rowNumbers, bool showTrackEndLines)
 
 //-------------------------------------------------------------------------------------
 // tracks numbers
+extern const uint32_t kTwistedBlockColours[9];
+
+static inline uint32_t twistedDimColour(uint32_t c)
+{
+    return ((c >> 1) & 0x7F7F7F) - ((c >> 3) & 0x1F1F1F);
+}
+
 void cTracker::tracksNumbers()
 {
     if (!tracks->showTrackNames)
@@ -941,12 +948,18 @@ void cTracker::tracksNumbers()
 
     for (uint8_t i = 0; i < columnsCount; i++)
     {
-        if (tracks->inactive[tracks->firstVisibleTrack + i])
+        int trackIdx = tracks->firstVisibleTrack + i;
+        // Twisted: a coloured track gets its block colour behind the name
+        uint8_t blockColour = trackIdx < tracks->kTrackCount ? tracks->headerColour[trackIdx] : 0;
+
+        if (blockColour > 0 && blockColour <= 8)
+            API_COLOR(tracks->inactive[trackIdx] ? twistedDimColour(kTwistedBlockColours[blockColour])
+                                                 : kTwistedBlockColours[blockColour]);
+        else if (tracks->inactive[tracks->firstVisibleTrack + i])
             API_COLOR(colors[12]);
         else
             API_COLOR(colors[19]);
 
-        int trackIdx = tracks->firstVisibleTrack + i;
         const char* text = trackIdx < tracks->kTrackCount ? tracks->tracksNames[trackIdx] : "";
         int letersCount = strlen(text);
         w = getTextWidth((strFont*)font, text, letersCount);
@@ -969,7 +982,9 @@ void cTracker::tracksNumbers()
         textLetersCount[i] = letersCount;
 
         API_VERTEX2F(x, y);
-        API_VERTEX2F(x + w + 2, y + h);
+        // coloured tracks fill the whole column so the colour is easy to see
+        API_VERTEX2F((blockColour > 0 && blockColour <= 8) ? (x + tracksWidth - 3) : (x + w + 2),
+                     y + h);
     }
 
     API_END();
@@ -989,6 +1004,10 @@ void cTracker::tracksNumbers()
         x = rightOffset + (i * tracksWidth) + 4;
         int trackIdx = tracks->firstVisibleTrack + i;
         const char* trackName = trackIdx < tracks->kTrackCount ? tracks->tracksNames[trackIdx] : "";
+        uint8_t blockColour = trackIdx < tracks->kTrackCount ? tracks->headerColour[trackIdx] : 0;
+        // black on a bright colour, white on a dimmed (muted) one: high contrast either way
+        API_COLOR((blockColour > 0 && blockColour <= 8 && !tracks->inactive[trackIdx]) ? 0x000000
+                                                                                     : colors[0]);
         string2Bitmaps(x, y, trackName, textLetersCount[i], false); //, tracksWidth-fonts[3].width
     }
 

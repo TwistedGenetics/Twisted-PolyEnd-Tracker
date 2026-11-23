@@ -165,8 +165,14 @@ void cSampleEditor::showMainScreen()
     display.setControlText(label[2], "Zoom");
     display.setControlText(label[3], "Undo");
     display.setControlText2(label[3], "");
+#ifndef TRACKER_MINI
+    // Twisted: Crop to New on F5 (main screen)
+    display.setControlText(label[4], isParametersScreen() ? "" : "Crop");
+    display.setControlText2(label[4], isParametersScreen() ? "" : "to New");
+#else
     display.setControlText(label[4], "");
     display.setControlText2(label[4], "");
+#endif
 
     if (isParametersScreen())
     {

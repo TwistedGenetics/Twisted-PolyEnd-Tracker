@@ -73,6 +73,102 @@ static void functPreview();
 static void functPlay();
 static void functStop();
 static void functSave();
+static void functCropToNew();
+// Twisted: Crop to New - copies the selected part of the sample into the first empty
+// instrument slot as a new sample, leaving the original as it is
+static void functCropToNew()
+{
+    if (SE->applyingInProgress || SE->processingInProgress || SE->playingInProgress)
+    {
+        return;
+    }
+    if (newFileManager.getStatus() != fmIdle || newFileManager.getCurrentOperation() != fmNoOperation)
+    {
+        return;
+    }
+
+    uint8_t srcIdx = mtProject.values.lastUsedInstrument;
+    if (srcIdx >= kSampleInstrumentsCount || !SE->editorInstrument->isActive)
+    {
+        return;
+    }
+
+    if (!SE->currentEffect->isDataLoaded())
+    {
+        mtPopups.show(0, "Sample still loading, try again");
+        return;
+    }
+
+    uint32_t total = SE->currentEffect->getLengthToPolyphonicPlay();
+    uint16_t a = std::min(SE->selection.startPoint, SE->selection.endPoint);
+    uint16_t b = std::max(SE->selection.startPoint, SE->selection.endPoint);
+    uint32_t from = (uint32_t)(((uint64_t)a * total) / MAX_16BIT);
+    uint32_t to = (uint32_t)(((uint64_t)b * total) / MAX_16BIT);
+    if (to > total)
+    {
+        to = total;
+    }
+    if (to <= from + 1)
+    {
+        mtPopups.show(0, "Set Start and End first");
+        return;
+    }
+
+    int newSlot = -1;
+    for (int i = 0; i < kSampleInstrumentsCount; i++)
+    {
+        if (!mtProject.instrument[i].isActive)
+        {
+            newSlot = i;
+            break;
+        }
+    }
+    if (newSlot < 0)
+    {
+        mtPopups.show(0, "No empty instrument slot");
+        return;
+    }
+
+    bool isStereo = SE->isCurrentSampleStereo();
+    uint32_t length = to - from;
+    uint32_t bytesNeeded = length * 2 * (isStereo ? 2 : 1);
+    if (mtProject.used_memory + bytesNeeded > mtProject.max_memory)
+    {
+        mtPopups.show(0, "Not enough sample memory");
+        return;
+    }
+
+    int16_t* left = SE->currentEffect->getAddresToPolyphonicPlay(mtEffect::Channel::kLeft) + from;
+    int16_t* right = isStereo
+                       ? SE->currentEffect->getAddresToPolyphonicPlay(mtEffect::Channel::kRight) + from
+                       : left;
+
+    // a fresh instrument named after the original
+    strInstrument& dst = mtProject.instrument[newSlot];
+    newFileManager.setDefaultActiveInstrument(&dst);
+    snprintf(dst.sample.file_name,
+             SAMPLE_NAME_SIZE,
+             "%.24s crop",
+             mtProject.instrument[srcIdx].sample.file_name);
+    dst.isActive = 1;
+
+    SE->cropNewSlot = (uint8_t)newSlot;
+    SE->cropNewStage = 1;
+
+    if (newFileManager.importSampleFromSampleEditor(left, right, length, (uint8_t)newSlot))
+    {
+        SE->ip->blockAllInputs();
+        static char msg[40]; // the popup keeps the pointer
+        snprintf(msg, sizeof(msg), "Cropped to instrument %d", newSlot + 1);
+        mtPopups.show(0, msg);
+    }
+    else
+    {
+        SE->cropNewStage = 0;
+        dst.isActive = 0;
+    }
+}
+
 // Stop Pattern Funct
 static void functStopPatternYes();
 static void functStopPatternNo();
@@ -374,6 +470,30 @@ void cSampleEditor::update()
     if (fileManagerStatus == fmImportSampleFromSampleEditorEnd)
     {
         newFileManager.clearStatus();
+
+        if (cropNewStage == 1) // Twisted: the new sample is saved
+        {
+            cropNewStage = 2;
+            reloadOnEndSaving = true;
+            afterReloadInstrumentIdx = cropNewSlot; // open the new sample afterwards
+
+            // keep any edits already applied to the original: save it too before reloading
+            if (confirmedDataIsChanged)
+            {
+                bool isStereo = isCurrentSampleStereo();
+                if (newFileManager.importSampleFromSampleEditor(
+                      currentEffect->getAddresToPolyphonicPlay(mtEffect::Channel::kLeft),
+                      currentEffect->getAddresToPolyphonicPlay(
+                        isStereo ? mtEffect::Channel::kRight : mtEffect::Channel::kLeft),
+                      currentEffect->getLengthToPolyphonicPlay(),
+                      mtProject.values.lastUsedInstrument))
+                {
+                    return;
+                }
+            }
+        }
+        cropNewStage = 0;
+
         newFileManager.reloadSamplesFromWorkspace();
     }
     else if (fileManagerStatus == fmReloadSamplesEnd)
@@ -401,6 +521,11 @@ void cSampleEditor::update()
     {
         ip->unblockAllInputs();
         newFileManager.clearStatus();
+        if (cropNewStage != 0)
+        {
+            cropNewStage = 0;
+            mtPopups.show(0, "Crop to New failed");
+        }
     }
 }
 
@@ -489,6 +614,9 @@ void cSampleEditor::setMainScreenFunctions()
         ip->setButtonObj(interfaceButton1, buttonPress, functSelectEndPoint);
         ip->setButtonObj(interfaceButton2, buttonPress, functSelectZoom);
         ip->setButtonObj(interfaceButton3, buttonPress, functUndo);
+#ifndef TRACKER_MINI
+        ip->setButtonObj(interfaceButton4, buttonPress, functCropToNew);
+#endif
     }
     ip->setButtonObj(interfaceButton5, buttonPress, functApply);
     ip->setButtonObj(interfaceButton6, buttonPress, functListUp);

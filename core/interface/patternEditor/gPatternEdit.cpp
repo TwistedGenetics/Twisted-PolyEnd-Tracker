@@ -1573,7 +1573,7 @@ void cPatternEditor::showActionButtonPage3Labels()
 {
     display.setControlText(label[0], "Pattern");
     display.setControlText(label[1], "Track");
-    display.setControlText(label[2], "");
+    display.setControlText(label[2], "Track");
     display.setControlText(label[3], "");
     display.setControlText(label[4], "");
     display.setControlText(label[5], "");
@@ -1582,7 +1582,7 @@ void cPatternEditor::showActionButtonPage3Labels()
 
     display.setControlText2(label[0], "Name");
     display.setControlText2(label[1], "Name");
-    display.setControlText2(label[2], "");
+    display.setControlText2(label[2], "Colour");
     display.setControlText2(label[3], "");
     display.setControlText2(label[4], "");
     display.setControlText2(label[5], "");
@@ -1598,6 +1598,11 @@ void cPatternEditor::showActionButtonPage3Labels()
 
     display.setControlColors(label[0], display.getTheme().activeButtonLabelsColors);
     display.setControlColors(label[1], display.getTheme().activeButtonLabelsColors);
+    for (uint8_t i = 2; i < 7; i++) // Twisted: also resets labels after the colour picker
+    {
+        display.setControlColors(label[i], display.getTheme().activeButtonLabelsColors);
+        display.setControlData(label[i], &labelDataGreen);
+    }
     display.setControlColors(label[7], display.getTheme().moreButtonColors);
 
     display.setControlData(label[0], &labelDataGreen);
@@ -1611,7 +1616,7 @@ void cPatternEditor::showActionButtonPage3Labels()
           label[i],
           controlStyleCenterX | controlStyleCenterY | controlStyleFont3 | controlStyleShow |
             (i == 7 ? controlStyleSpecialFx2
-                    : (i < 2 ? (display.getTheme().patternEditorBottomButtonsLines
+                    : (i < 3 ? (display.getTheme().patternEditorBottomButtonsLines
                                   ? controlStyleSpecialFx
                                   : 0)
                              : 0)));
@@ -1838,5 +1843,51 @@ void cPatternEditor::showClockWarning()
     display.setControlShow(bgLabel);
     display.refreshControl(bgLabel);
 
+    display.synchronizeRefresh();
+}
+
+//--------------------------------------------------------------------------------------- Twisted: track colour picker
+extern const uint32_t kTwistedBlockColours[9];
+
+void cPatternEditor::showTrackColourPickerLabels()
+{
+    static const char* const kNames[8] = { "Red",  "Orange", "Yellow", "Green",
+                                           "Cyan", "Blue",   "Purple", "Pink" };
+    // the bottom labels have no background fill, so each name is written in its own
+    // colour; blue and purple use lighter shades so they stay easy to read
+    static const uint32_t kTextShade[8] = { 0xFF3B30, 0xFF9500, 0xFFE000, 0x34D158,
+                                            0x00D4E6, 0x6FA8FF, 0xC99BFF, 0xFF5FB4 };
+    static uint32_t pickerColours[8][4];
+
+    const uint32_t* theme = display.getTheme().activeButtonLabelsColors;
+
+    uint8_t current = 0;
+    if (trackerPattern.actualTrack >= 0 && trackerPattern.actualTrack < kAllTracks)
+    {
+        current = newFileManager.getTwistedSong()->getBlockColour(mtProject.values.actualPattern,
+                                                                  trackerPattern.actualTrack);
+    }
+
+    for (uint8_t i = 0; i < 8; i++)
+    {
+        pickerColours[i][0] = kTextShade[i];
+        pickerColours[i][1] = theme[1];
+        pickerColours[i][2] = theme[2];
+        pickerColours[i][3] = kTextShade[i];
+
+        display.setControlText(label[i], kNames[i]);
+        display.setControlText2(label[i], (current == i + 1) ? "(now)" : "");
+        display.setControlValue(label[i], 0);
+        display.setControlColors(label[i], pickerColours[i]);
+        display.setControlData(label[i], &labelDataGreen);
+        display.setControlStyle(label[i],
+                                controlStyleCenterX | controlStyleCenterY | controlStyleFont3 |
+                                  controlStyleShow);
+        display.setControlStyle2(label[i],
+                                 controlStyleCenterX | controlStyleCenterY | controlStyleFont3);
+        display.refreshControl(label[i]);
+    }
+
+    titleBar->setTitle("Track Colour:  DELETE clears,  INSERT cancels");
     display.synchronizeRefresh();
 }

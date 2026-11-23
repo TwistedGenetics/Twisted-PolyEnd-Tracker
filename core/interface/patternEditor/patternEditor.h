@@ -361,6 +361,13 @@ class cPatternEditor : public ModuleBase
     void showActionButtonPage2Labels();
     void showActionButtonPage3Labels();
 
+    // Twisted: track colour (the song view's block colour) from the pattern editor
+    bool pickingTrackColour = false;
+    void startTrackColourPicker();
+    void showTrackColourPickerLabels();
+    void applyTrackColour(uint8_t colour);
+    void cancelTrackColourPicker();
+
     //--------------------------------------------------------
     // title bar
     void showTitleBar();

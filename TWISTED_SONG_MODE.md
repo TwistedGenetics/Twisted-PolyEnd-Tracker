@@ -150,6 +150,16 @@ Code: `core/libs/Audio/play_memory_akaizer.cpp`, `core/source/mtStructs.h`
 Code: `core/FileManager/fileManagerBrowse.cpp`, `platforms/*/SD.cpp`
 (`createFilesList`), `core/interface/sampleImporter/*`.
 
+## Crop to New and pattern track colours (v1.4.0)
+
+- **Crop to New** (Sample Editor, F5): the Start..End part of the current sample
+  is saved into the first empty instrument slot (named `<original> crop`), then the
+  edited original is saved too if it has applied changes, and the editor reloads on
+  the new sample. Uses `importSampleFromSampleEditor` (`fSampleEdit.cpp`).
+- **Pattern editor track colours**: the block colour of each track in the current
+  pattern is drawn behind its name (`tracker.cpp`, `strTrackerPattern::headerColour`),
+  and F3 **Track Colour** on the Name page sets it (cursor track or selected tracks).
+
 ## Files
 
 | File | What |

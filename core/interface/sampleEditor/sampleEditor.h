@@ -418,6 +418,9 @@ class cSampleEditor : public ModuleBase
     bool isProcessedData;
 
     bool confirmedDataIsChanged;
+    // Twisted: Crop to New - 0 idle, 1 saving the new sample, 2 saving the edited original
+    uint8_t cropNewStage = 0;
+    uint8_t cropNewSlot = 0;
     bool reloadOnEndSaving;
     uint8_t afterReloadInstrumentIdx;
     uint8_t beforeReloadInstrumentIdx;

@@ -48,6 +48,17 @@ static void functPastePattern();
 
 static void functNamePattern();
 static void functNameTrack();
+static void functTrackColour();
+static void functTrackColourDelete();
+static void functTrackColourCancel();
+static void functPickTrackColour0();
+static void functPickTrackColour1();
+static void functPickTrackColour2();
+static void functPickTrackColour3();
+static void functPickTrackColour4();
+static void functPickTrackColour5();
+static void functPickTrackColour6();
+static void functPickTrackColour7();
 
 static void functClockWarningPopupButtons(uint8_t button, uint8_t state);
 
@@ -310,6 +321,7 @@ void cPatternEditor::start(uint32_t options)
 
     moduleRefresh = 1;
     patternButtonReleaseActive = 0;
+    pickingTrackColour = false;
 
     undoRedoButtonReleaseBlocker = 1;
 
@@ -620,6 +632,10 @@ void cPatternEditor::refreshPattern()
         trackerPattern.inactive[trackIdx] = isSampleTrack(trackIdx)
                                               ? mtProject.values.trackMute[trackIdx]
                                               : mtProject.values.midiTrackMute[trackIdx % 8];
+
+        // Twisted: the song view's block colour shows behind the track name
+        trackerPattern.headerColour[trackIdx] =
+          newFileManager.getTwistedSong()->getBlockColour(mtProject.values.actualPattern, trackIdx);
 
         for (uint8_t rowIdx = 0; rowIdx < 15; rowIdx++)
         {
@@ -3934,6 +3950,97 @@ static void functNameTrack()
     PTE->setKeyboardNamePatternFunctions(functConfirmNameTrack, false);
 }
 // ##############################################################################################
+// ###############################   Twisted: TRACK COLOUR      #################################
+// ##############################################################################################
+// The colour is the song view's block colour for this pattern's track, so it shows (and can be
+// changed) in both places.
+static void functTrackColour()
+{
+    if (PTE->trackerPattern.actualTrack < 0 || PTE->trackerPattern.actualTrack >= kAllTracks)
+    {
+        return;
+    }
+    PTE->startTrackColourPicker();
+}
+
+void cPatternEditor::startTrackColourPicker()
+{
+    pickingTrackColour = true;
+
+    ip->clearButtonsRange(interfaceButton0, interfaceButton7);
+    ip->setButtonObj(interfaceButton0, buttonPress, functPickTrackColour0);
+    ip->setButtonObj(interfaceButton1, buttonPress, functPickTrackColour1);
+    ip->setButtonObj(interfaceButton2, buttonPress, functPickTrackColour2);
+    ip->setButtonObj(interfaceButton3, buttonPress, functPickTrackColour3);
+    ip->setButtonObj(interfaceButton4, buttonPress, functPickTrackColour4);
+    ip->setButtonObj(interfaceButton5, buttonPress, functPickTrackColour5);
+    ip->setButtonObj(interfaceButton6, buttonPress, functPickTrackColour6);
+    ip->setButtonObj(interfaceButton7, buttonPress, functPickTrackColour7);
+    ip->setButtonObj(interfaceButtonDelete, buttonPress, functTrackColourDelete);
+    ip->setButtonObj(interfaceButtonInsert, buttonPress, functTrackColourCancel);
+
+    showTrackColourPickerLabels();
+}
+
+void cPatternEditor::cancelTrackColourPicker()
+{
+    if (!pickingTrackColour)
+    {
+        return;
+    }
+    pickingTrackColour = false;
+
+    ip->setButtonObj(interfaceButtonInsert, functInsertHome);
+    ip->setButtonObj(interfaceButtonDelete, functDeleteBackspace);
+
+    refreshActualActionButtonPage();
+    showTitleBar();
+}
+
+// colours the track under the cursor, or every track in the selection
+void cPatternEditor::applyTrackColour(uint8_t colour)
+{
+    int firstTrack = trackerPattern.actualTrack;
+    int lastTrack = trackerPattern.actualTrack;
+
+    if (trackerPattern.selectState == 2)
+    {
+        firstTrack = std::min(trackerPattern.selectStartTrack, trackerPattern.selectEndTrack);
+        lastTrack = std::max(trackerPattern.selectStartTrack, trackerPattern.selectEndTrack);
+    }
+
+    TwistedSong* ts = newFileManager.getTwistedSong();
+    bool changed = false;
+
+    for (int track = std::max(firstTrack, 0); track <= lastTrack && track < kAllTracks; track++)
+    {
+        if (ts->setBlockColour(mtProject.values.actualPattern, track, colour))
+        {
+            changed = true;
+        }
+    }
+
+    if (changed)
+    {
+        ts->saveChanges();
+    }
+
+    cancelTrackColourPicker();
+    refreshPattern();
+}
+
+static void functPickTrackColour0() { PTE->applyTrackColour(1); }
+static void functPickTrackColour1() { PTE->applyTrackColour(2); }
+static void functPickTrackColour2() { PTE->applyTrackColour(3); }
+static void functPickTrackColour3() { PTE->applyTrackColour(4); }
+static void functPickTrackColour4() { PTE->applyTrackColour(5); }
+static void functPickTrackColour5() { PTE->applyTrackColour(6); }
+static void functPickTrackColour6() { PTE->applyTrackColour(7); }
+static void functPickTrackColour7() { PTE->applyTrackColour(8); }
+static void functTrackColourDelete() { PTE->applyTrackColour(TwistedSong::kNoColour); }
+static void functTrackColourCancel() { PTE->cancelTrackColourPicker(); }
+
+// ##############################################################################################
 // ###############################            INVERT            #################################
 // ##############################################################################################
 static void functInvert()
@@ -5158,6 +5265,7 @@ void cPatternEditor::setActionButtonPage3Funct()
 
     ip->setButtonObj(interfaceButton0, buttonPress, functNamePattern);
     ip->setButtonObj(interfaceButton1, buttonPress, functNameTrack);
+    ip->setButtonObj(interfaceButton2, buttonPress, functTrackColour);
 
     ip->setButtonObj(interfaceButton7, buttonPress, functNextActionButtonPage);
 }
@@ -5165,6 +5273,14 @@ void cPatternEditor::setActionButtonPage3Funct()
 // odsiwez przypisanie akcji oraz grafike przyciskow pod ekranem
 void cPatternEditor::refreshActualActionButtonPage()
 {
+    if (pickingTrackColour) // Twisted: anything that redraws the page ends the colour picker
+    {
+        pickingTrackColour = false;
+        ip->setButtonObj(interfaceButtonInsert, functInsertHome);
+        ip->setButtonObj(interfaceButtonDelete, functDeleteBackspace);
+        showTitleBar();
+    }
+
     ip->clearButtonsRange(interfaceButton0, interfaceButton7);
 
     switch (actualActionButtonsPage)

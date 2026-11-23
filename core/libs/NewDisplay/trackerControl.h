@@ -56,6 +56,8 @@ struct strTrackerPattern
 
     bool showTrackNames;
     const char* tracksNames[kTrackCount];
+    // Twisted: block colour of each track in this pattern (0 = none, 1..8)
+    uint8_t headerColour[kTrackCount];
 
     void init()
     {
@@ -76,6 +78,7 @@ struct strTrackerPattern
             }
             inactive[t] = 0;
             tracksNames[t] = nullptr;
+            headerColour[t] = 0;
         }
         actualTrack = 0;
         actualStep = 0;
