@@ -807,7 +807,25 @@ bool twKeepAsIs(const std::string& lowerName)
     for (const char* k : kKeep)
         if (twStartsWithWord(lowerName, k))
             return true;
+
+    // anything that can keep a note sounding after its release: the amp envelope's amount (less of it = a drone
+    // under the envelope), the DX7 algorithm (a modulator turned carrier keeps its near-endless release), delay
+    // feedback and reverb tails
+    static const char* const kTails[] = { "amp eg", "algorithm", "feedback", "delay feedback", "time", "delay time",
+                                          "ping pong ratio", "diffusion", "reverb mode", "reverb size",
+                                          "reverb decay" };
+    for (const char* k : kTails)
+        if (lowerName == k)
+            return true;
     return false;
+}
+
+// a modulation destination that would hold the amp open (CRAFTY's "AEG ..." and "VOLUME")
+bool twHoldsAmpOpen(const std::string& lowerValueText)
+{
+    return lowerValueText.find("aeg") != std::string::npos || lowerValueText.find("volume") != std::string::npos ||
+           lowerValueText.compare(0, 3, "amp") == 0 || lowerValueText.find(" amp") != std::string::npos ||
+           lowerValueText.find("(amp") != std::string::npos; // the stock models' "Amp ..." (not "Ramp Up")
 }
 
 bool twIsEnvTime(const std::string& lowerName)
@@ -880,6 +898,8 @@ void cInstrumentEditor::randomizeCurrentPatch()
                     v = 0.0f;
                 else
                     v = static_cast<float>(1 + static_cast<int>(twRand() % static_cast<uint32_t>(p.maxValue)));
+                if (v != 0.0f && p.valueFormatter && twHoldsAmpOpen(twLower(p.valueFormatter(patch, v))))
+                    v = 0.0f;
             }
             else // an offset from the preset: mostly small, now and then bigger
             {
@@ -892,6 +912,8 @@ void cInstrumentEditor::randomizeCurrentPatch()
         {
             v = static_cast<float>(p.minValue +
                                    static_cast<int>(twRand() % static_cast<uint32_t>(p.maxValue - p.minValue + 1)));
+            if (p.valueFormatter && twHoldsAmpOpen(twLower(p.valueFormatter(patch, v))))
+                continue;
         }
         else
         {
