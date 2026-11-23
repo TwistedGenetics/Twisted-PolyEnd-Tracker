@@ -47,6 +47,47 @@ struct Record
 __attribute__((section(".noinit.twcrash"))) Record rec;
 Record pending;
 bool havePending = false;
+uint32_t resetReason = 0; // SRC->SRSR at start-up
+
+// A copy of the essentials in the SNVS general-purpose registers, which keep their contents through a reset even
+// when the boot loader reuses the RAM the full record is in.
+constexpr uint32_t kSnvsMagic = 0x5457u; // "TW"
+void snvsSave(const Record& r)
+{
+    const uint32_t count = r.crumbHead < kCrumbs ? r.crumbHead : kCrumbs;
+    uint32_t packed = 0;
+    for (uint32_t i = 0; i < 4 && i < count; i++)
+        packed |= (r.crumbs[(r.crumbHead - 1 - i) % kCrumbs] & 0xFFu) << (8 * i); // newest first
+    SNVS->LPGPR[2] = (kSnvsMagic << 16) | ((r.type & 0xFFu) << 8) | (r.xpsr & 0xFFu);
+    SNVS->LPGPR[3] = r.pc;
+    SNVS->LPGPR[4] = r.lr;
+    SNVS->LPGPR[5] = r.cfsr;
+    SNVS->LPGPR[6] = packed;
+    SNVS->LPGPR[7] = (r.uptimeMs / 1000u) | (r.size << 20);
+}
+bool snvsLoad(Record& r)
+{
+    const uint32_t w = SNVS->LPGPR[2];
+    if ((w >> 16) != kSnvsMagic)
+        return false;
+    std::memset(&r, 0, sizeof(r));
+    r.type = (w >> 8) & 0xFFu;
+    r.xpsr = w & 0xFFu;
+    r.pc = SNVS->LPGPR[3];
+    r.lr = SNVS->LPGPR[4];
+    r.cfsr = SNVS->LPGPR[5];
+    const uint32_t packed = SNVS->LPGPR[6];
+    for (uint32_t i = 0; i < 4; i++)
+        r.crumbs[3 - i] = (packed >> (8 * i)) & 0xFFu;
+    r.crumbHead = 4;
+    r.uptimeMs = (SNVS->LPGPR[7] & 0xFFFFFu) * 1000u;
+    r.size = SNVS->LPGPR[7] >> 20;
+    return true;
+}
+void snvsClear()
+{
+    SNVS->LPGPR[2] = 0;
+}
 
 uint32_t checksum(const Record& r)
 {
@@ -96,6 +137,7 @@ extern "C"
             rec.crumbHead = crumbHead;
             rec.sum = checksum(rec);
             rec.magic = kMagic;
+            snvsSave(rec);
             __DSB();
         }
         NVIC_SystemReset();
@@ -150,19 +192,36 @@ extern "C"
     // at start-up: keep a report from before the reset, if there is one
     void twCrashInit()
     {
+        resetReason = SRC->SRSR;
+        SRC->SRSR = resetReason; // (write 1 to clear)
         if (rec.magic == kMagic && rec.sum == checksum(rec))
         {
             pending = rec;
             havePending = true;
         }
+        else if (snvsLoad(pending))
+        {
+            havePending = true; // the RAM copy was lost: the short one from the SNVS registers
+        }
         rec.magic = 0;
+        snvsClear();
     }
 
     // the report as text (once), or 0
     int twCrashTakeReport(char* out, int len, const char* version)
     {
-        if (!havePending || out == nullptr || len < 64)
+        if (out == nullptr || len < 64)
             return 0;
+        if (!havePending)
+        {
+            // no record, but not a plain power-on: say what restarted it (bit 0 = power-on reset)
+            const uint32_t why = resetReason;
+            resetReason = 0;
+            if (why == 0 || (why & ~1u) == 0)
+                return 0;
+            return snprintf(out, len, "---- Twisted Tracker %s: restarted without a record, reset reason %08lx\r\n",
+                            version, (unsigned long)why);
+        }
         havePending = false;
         const Record& r = pending;
         static const char* const kTypes[] = { "?", "hard fault", "memory fault", "bus fault", "usage fault",
