@@ -160,6 +160,16 @@ Code: `core/FileManager/fileManagerBrowse.cpp`, `platforms/*/SD.cpp`
   pattern is drawn behind its name (`tracker.cpp`, `strTrackerPattern::headerColour`),
   and F3 **Track Colour** on the Name page sets it (cursor track or selected tracks).
 
+## REESE synth and graffiti splash (v1.5.0)
+
+- **REESE** (`core/synth/engines/ReeseSynthVoice.cpp`): DREADNOUGHT's Reese bass rewritten in
+  float for the PolySynth SDK (`InstrumentTypeId::kReeseSynth`), mono with glide. Its 10 presets are a
+  `Preset` parameter; every other knob is an offset from the preset, shown as the resulting value.
+  None of DREADNOUGHT's third-party GPL code (the Clipper ladder, the Felucca helpers) is used.
+- **Splash** (Tracker+ only): `core/libs/images/twisted_splash.*`, made from
+  `docs/images/twisted_splash_source.png` by `tools/make_splash.py` (720x396, PALETTED565), uploaded to
+  RAM_G 690000 at boot (in 32 KB pieces) and drawn by `startScreen.cpp` on white.
+
 ## Files
 
 | File | What |

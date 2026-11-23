@@ -4,6 +4,7 @@
 #include "display.h"
 #include "displayControls.h"
 #include "startScreenControl.h"
+#include "images/twisted_splash.h"
 
 //--------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------
@@ -88,6 +89,60 @@ void cStartScreen::setData(void* data)
 //--------------------------------------------------------------------------------
 void cStartScreen::update()
 {
+#ifdef TWISTED_SPLASH
+    // Twisted: the graffiti logo on a white screen, black text and progress bar below it
+    {
+        API_SAVE_CONTEXT();
+        API_COLOR(0xFFFFFF);
+        API_BEGIN(RECTS);
+        API_VERTEX2F(0, 0);
+        API_VERTEX2F(799, 479);
+        API_END();
+
+        API_BITMAP_SOURCE(kTwistedSplashRamAddr);
+        API_BITMAP_LAYOUT(PALETTED565, kTwistedSplashW, kTwistedSplashH);
+        API_BITMAP_LAYOUT_H(kTwistedSplashW >> 10, kTwistedSplashH >> 9);
+        API_BITMAP_SIZE(NEAREST, BORDER, BORDER, kTwistedSplashW & 511, kTwistedSplashH & 511);
+        API_BITMAP_SIZE_H(kTwistedSplashW >> 9, kTwistedSplashH >> 9);
+        API_PALETTE_SOURCE(kTwistedSplashPalAddr);
+        API_BEGIN(BITMAPS);
+        API_VERTEX2F((800 - kTwistedSplashW) / 2, 6);
+        API_END();
+        // leave the bitmap handle's high size bits as they were for everyone else
+        API_BITMAP_LAYOUT_H(0, 0);
+        API_BITMAP_SIZE_H(0, 0);
+
+        int v = value < 0 ? 0 : (value > 100 ? 100 : value);
+        const uint16_t barX = 150, barW = 500, barY = 446, barH = 8;
+
+        API_COLOR(0xD0D0D0);
+        API_BEGIN(RECTS);
+        API_VERTEX2F(barX, barY);
+        API_VERTEX2F(barX + barW, barY + barH);
+        API_END();
+        if (v > 0)
+        {
+            API_COLOR(0x111111);
+            API_BEGIN(RECTS);
+            API_VERTEX2F(barX, barY);
+            API_VERTEX2F(barX + (barW * v) / 100, barY + barH);
+            API_END();
+        }
+
+        API_COLOR(0x111111);
+        if (text != nullptr)
+        {
+            API_CMD_TEXT(400, 424, textFont, OPT_CENTER, text);
+        }
+        if (data != nullptr)
+        {
+            API_CMD_TEXT(10, 457, textFont, 0, "v");
+            API_CMD_TEXT(22, 457, textFont, 0, data);
+        }
+        API_RESTORE_CONTEXT();
+        return;
+    }
+#endif
 #define bitmap_index 0
 
     API_SAVE_CONTEXT();

@@ -202,7 +202,7 @@
     <b>Firmware:</b> Twisted PolyEnd Tracker, based on Polyend Tracker Community Edition 1.0.0<br>
     <b>For:</b> Tracker+ (the original Tracker builds too; the Tracker Mini has no song tools)<br>
     <b>Repository:</b> github.com/TwistedGenetics/Twisted-PolyEnd-Tracker<br>
-    <b>Manual version:</b> 1.6 · November 2026
+    <b>Manual version:</b> 1.7 · November 2026
   </div>
 </div>
 
@@ -223,9 +223,10 @@
     <li><span class="n">11</span> Akaizer play mode and FX commands</li>
     <li><span class="n">12</span> Faster sample browser</li>
     <li><span class="n">13</span> Crop to New (Sample Editor)</li>
-    <li><span class="n">14</span> Projects, saving and compatibility</li>
-    <li><span class="n">15</span> Messages and troubleshooting</li>
-    <li><span class="n">16</span> Quick reference</li>
+    <li><span class="n">14</span> REESE synth</li>
+    <li><span class="n">15</span> Projects, saving and compatibility</li>
+    <li><span class="n">16</span> Messages and troubleshooting</li>
+    <li><span class="n">17</span> Quick reference</li>
   </ol>
 </section>
 
@@ -244,6 +245,8 @@
     <tr><td><b>Akaizer</b></td><td>The classic Akaizer timestretch: as a Sample Editor effect, as a live <b>Akaizer play mode</b> for instruments, and as two FX commands (<code>K</code> Stretch, <code>Y</code> Cycle) that change it per step.</td></tr>
     <tr><td><b>Block colours</b></td><td>Colour-code the blocks in the song view with 8 colours (drums blue, bass red…). Colours move with blocks you copy. The pattern editor shows the same colour behind each track name, and you can set it there too.</td></tr>
     <tr><td><b>Faster sample browser</b></td><td>Folders open much faster, and a folder of up to 499 samples is shown as one list instead of being split into groups of 99.</td></tr>
+    <tr><td><b>REESE synth</b></td><td>The Reese bass engine from DREADNOUGHT as a Tracker+ synth, with its 10 sounds: classic jungle, OG, techstep, neuro and more.</td></tr>
+    <tr><td><b>Graffiti start screen</b></td><td>The Tracker+ starts up with the Twisted Tracker graffiti logo.</td></tr>
     <tr><td><b>Crop to New</b></td><td>In the Sample Editor, copy the part between Start and End into a new instrument, leaving the original untouched.</td></tr>
   </table>
   <div class="note"><b>Your projects stay safe</b>Sections, variation links and block colours are kept in a separate file inside the project. Stock Polyend firmware ignores that file, so it still opens your projects. It just won't show the sections or colours, or keep variations linked.</div>
@@ -684,9 +687,56 @@
   <div class="note"><b>Chopping a break</b>Set Start and End around the first hit, press <kbd>F5</kbd>. The editor jumps to the new sample, so pick the original again with the <kbd>Instr</kbd> button, move the points to the next hit and repeat.</div>
 </section>
 
+<!-- ============================================================ reese -->
+<section>
+  <h2>14 · REESE synth</h2>
+  <p><b>REESE</b> is the Reese bass engine from DREADNOUGHT, now one of the Tracker+'s synth engines next to ACD, FAT, VAP, WTFM, PERC, DIRT and CHIP. It makes the classic jungle and drum &amp; bass bass: two or more detuned oscillators whose phasing tears and rolls, with a clean sub underneath.</p>
+  <h3>Use it</h3>
+  <ol class="steps">
+    <li>Open a synth instrument (<b>SYN 1</b>–<b>SYN 3</b>) in the Instrument screen.</li>
+    <li>Choose <b>REESE</b> as the model.</li>
+    <li>In the patch editor, turn <b>Preset</b> to pick one of the 10 sounds, then shape it with the other knobs.</li>
+  </ol>
+  <h3>The presets</h3>
+  <table>
+    <tr><th>Preset</th><th>Sound</th></tr>
+    <tr><td>Classic</td><td>The jungle classic: two saws about 30 cents apart, filtered around 900 Hz, a clean sub, a little drive.</td></tr>
+    <tr><td>OG Reese</td><td>The 1988 original's idea: two detuned sines, saturated, no separate sub.</td></tr>
+    <tr><td>Hollow</td><td>Classic with a slow notch sweep: the hollow, phasing vowel.</td></tr>
+    <tr><td>Techstep</td><td>A saw against a square, driven hard, with a notch sweep and a slow filter wobble.</td></tr>
+    <tr><td>Neuro</td><td>Five saws spread wide, the filter resonating, heavy drive and a faster wobble.</td></tr>
+    <tr><td>Sync</td><td>The phasing locked to quarter notes at your tempo, on every note.</td></tr>
+    <tr><td>Dark</td><td>Three saws close together, filtered low, a heavy sub.</td></tr>
+    <tr><td>Sub Reese</td><td>Mostly sub: a narrow pair colouring a big sine.</td></tr>
+    <tr><td>Hoover</td><td>Seven saws a whole semitone wide with a long glide: the hoover side of the family.</td></tr>
+    <tr><td>Init</td><td>A plain starting point: two saws, open filter, no drive, no movement.</td></tr>
+  </table>
+  <h3>How the knobs work</h3>
+  <p>Every knob <b>moves the preset's own value</b>, and the screen shows where it ends up (in Hz, cents, ms or %). Change Preset and the sound changes at once, with your changes kept on top. <b>Oscillators</b> and <b>Beat Sync</b> start on <i>Preset</i>; turn them to choose your own.</p>
+  <table>
+    <tr><th>Knob</th><th>What it does</th></tr>
+    <tr><td>Oscillators</td><td>2, 3, 5 or 7 saws, saw + square, or 2 sines.</td></tr>
+    <tr><td>Detune</td><td>How far apart the oscillators are, 0–100 cents. More = faster, wider phasing.</td></tr>
+    <tr><td>Beat Sync</td><td>Lock the phasing to the tempo (1/1 to 1/16, triplets) so it moves the same on every note.</td></tr>
+    <tr><td>Sub</td><td>A clean sine on the root. Above 0, the low end of the oscillators is cut at about 120 Hz so the bottom stays solid.</td></tr>
+    <tr><td>Cutoff / Resonance</td><td>A 24 dB ladder low-pass, 30 Hz to 16 kHz.</td></tr>
+    <tr><td>Drive</td><td>Distortion before the filter, on everything except the sub.</td></tr>
+    <tr><td>Notch Sweep</td><td>A slowly swept notch comb for the hollow, flanging movement.</td></tr>
+    <tr><td>Filter Env</td><td>How much the envelope opens (or closes) the filter.</td></tr>
+    <tr><td>Attack / Decay / Sustain / Release</td><td>The volume envelope.</td></tr>
+    <tr><td>LFO Rate / LFO &gt; Cutoff</td><td>A sine wobble on the cutoff.</td></tr>
+    <tr><td>Glide / Glide Mode</td><td>Slide between notes. <b>Always</b> slides into every note while the last one is still sounding; <b>Legato</b> only when notes overlap.</td></tr>
+    <tr><td>Transpose</td><td>±36 semitones. 0 plays the note you enter (Hoover sits an octave up).</td></tr>
+    <tr><td>Velocity</td><td>How much velocity changes the volume.</td></tr>
+    <tr><td>Gain</td><td>Output level.</td></tr>
+  </table>
+  <p>The six default macros are Cutoff, Detune, Notch Sweep, Drive, Resonance and Wobble.</p>
+  <div class="note"><b>Mono by design</b>REESE plays one note at a time, like the real thing, so glides and legato lines behave. Use a second SYN slot for a second Reese.</div>
+</section>
+
 <!-- ============================================================ 10 -->
 <section>
-  <h2>14 · Projects, saving and compatibility</h2>
+  <h2>15 · Projects, saving and compatibility</h2>
   <ul>
     <li>Sections, variation links and block colours are saved in the file <code>patterns/twistedSong</code> inside each project, next to the pattern files.</li>
     <li>They're saved and opened with the project as usual. You don't need to do anything extra.</li>
@@ -697,6 +747,7 @@
   <ul>
     <li>Sections and block colours aren't shown.</li>
     <li>Instruments in Akaizer play mode don't play on stock firmware (it doesn't know the mode), and <code>K</code> / <code>Y</code> FX are ignored. Switch an instrument to another mode, or render it with the Sample Editor's Akaizer, before sharing.</li>
+    <li>A SYN slot set to REESE won't play on stock firmware, which doesn't have the engine. Resample the part to audio before sharing the project.</li>
     <li>Variations play as ordinary patterns with the notes they had when last saved.</li>
     <li>Edits made on stock firmware don't update variations. When you're back on Twisted firmware, the links resume from the next time an original is saved.</li>
   </ul>
@@ -705,7 +756,7 @@
 
 <!-- ============================================================ 10 -->
 <section>
-  <h2>15 · Messages and troubleshooting</h2>
+  <h2>16 · Messages and troubleshooting</h2>
   <table>
     <tr><th>Message or problem</th><th>Meaning / what to do</th></tr>
     <tr><td><b>Press REC to edit the song</b></td><td>That tool changes the song. Turn on edit mode with <kbd>Rec</kbd> first.</td></tr>
@@ -734,7 +785,7 @@
 
 <!-- ============================================================ 11 -->
 <section>
-  <h2>16 · Quick reference</h2>
+  <h2>17 · Quick reference</h2>
   <table>
     <tr><th>Do this</th><th>Press</th></tr>
     <tr><td>Open / close song tools</td><td><kbd>Insert</kbd> on the Song screen</td></tr>
@@ -754,6 +805,7 @@
     <tr><td>Colour blocks</td><td>Select blocks, <kbd>Insert</kbd>, <kbd>F7</kbd>, pick <kbd>F1</kbd>–<kbd>F8</kbd></td></tr>
     <tr><td>Remove colour</td><td>Select blocks, <kbd>Insert</kbd>, <kbd>F7</kbd>, <kbd>Delete</kbd></td></tr>
     <tr><td>Colour a track in the pattern editor</td><td><kbd>F8</kbd> (More) to the Name page, <kbd>F3</kbd>, pick <kbd>F1</kbd>–<kbd>F8</kbd></td></tr>
+    <tr><td>Play a Reese bass</td><td>Instrument screen, a SYN slot, model <b>REESE</b>, turn Preset</td></tr>
     <tr><td>Copy part of a sample to a new instrument</td><td>Sample Editor, set Start / End, <kbd>F5</kbd> Crop to New</td></tr>
     <tr><td>Back to normal song buttons</td><td><kbd>Insert</kbd></td></tr>
   </table>

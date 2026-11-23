@@ -3,6 +3,7 @@
 
 #include "PolySynth/sdk/InstrumentTypeRegistry.h"
 #include "engines/ChiptuneSynthVoice.h"
+#include "engines/ReeseSynthVoice.h"
 
 namespace polysynth
 {
@@ -33,6 +34,8 @@ void InstrumentTypeRegistry::registerInstrumentTypes(
     // Open-Source Custom Synth Engines
     registry.addInstrumentType(static_cast<int>(InstrumentTypeId::kChiptuneSynth),
                                createChiptuneSynth());
+    // Twisted: REESE (DREADNOUGHT's Reese bass)
+    registry.addInstrumentType(static_cast<int>(InstrumentTypeId::kReeseSynth), createReeseSynth());
 }
 
 } // namespace polysynth

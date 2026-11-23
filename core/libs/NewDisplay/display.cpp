@@ -27,6 +27,7 @@
 // BITMAPS
 #ifndef TRACKER_MINI
 #include "images/poly_logo_160x172_L8.h"
+#include "images/twisted_splash.h"
 #else
 #include "images/poly_logo_172x172_L8.h"
 #endif
@@ -75,6 +76,8 @@
 #include "images/synth_shaper_18x18_L4.h"
 #include "images/chip_med_108x40_L2.h"
 #include "images/chip_mini_nomark_80x28_L2.h"
+#include "images/reese_med_108x40_L2.h"
+#include "images/reese_mini_nomark_80x28_L2.h"
 
 #endif
 
@@ -209,6 +212,8 @@ const strBitmap bitmaps[displayBitmapsCount] = {
     { synth_shaper_18x18_L4, 126900, 162, 18, 18, L4, 9 },
     { chip_mini_nomark_80x28_L2, 127100, 560, 80, 28, L2, 20 },
     { chip_med_108x40_L2, 127700, 1080, 108, 40, L2, 27 },
+    { reese_mini_nomark_80x28_L2, 128800, 560, 80, 28, L2, 20 }, // Twisted
+    { reese_med_108x40_L2, 129400, 1080, 108, 40, L2, 27 },
 
 #endif
 };
@@ -308,6 +313,21 @@ void cDisplay::begin(DisplayDriver* displayDriver, Timer* timer)
     {
         displayDriver->writeDataRAMG(bitmaps[i].data, bitmaps[i].source, bitmaps[i].address);
     }
+
+#ifdef TWISTED_SPLASH
+    // Twisted: the graffiti splash, above the controls' display-list area. It is only drawn at
+    // start-up, so later users of that RAM (image viewer, snapshots) may overwrite it freely.
+    // Written in 32 KB pieces: the low-level writer counts bytes in 16 bits.
+    {
+        const uint32_t size = static_cast<uint32_t>(kTwistedSplashW) * kTwistedSplashH;
+        for (uint32_t done = 0; done < size; done += 32768)
+        {
+            const uint32_t n = (size - done) < 32768 ? (size - done) : 32768;
+            displayDriver->writeDataRAMG(twisted_splash_idx + done, n, kTwistedSplashRamAddr + done);
+        }
+        displayDriver->writeDataRAMG(twisted_splash_pal, sizeof(twisted_splash_pal), kTwistedSplashPalAddr);
+    }
+#endif
 
     loadFont(fontsData1, displayFontCount);
 
