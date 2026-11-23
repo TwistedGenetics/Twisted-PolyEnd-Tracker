@@ -192,6 +192,13 @@ class cSongEditor : public ModuleBase
     void unlinkSelectedSlot();
     void removeSectionAtSelection();
 
+    // solo the highlighted track (F8 on the tools page)
+    int8_t soloTrack = -1; // -1 = no solo
+    uint8_t soloSavedMute[kSampleTracks];
+    uint8_t soloSavedMidiMute[kMaxMidiTracksInTrackers];
+    void toggleSoloSelectedTrack();
+    void applyTrackMutes();
+
     // block colours
     void startColourPicker();
     void stopColourPicker();

@@ -146,9 +146,11 @@ void cSongEditor::refreshAddSlotLabel(bool isButtonPressed)
 {
     if (toolsPage && !namingSection && !pickingColour)
     {
-        // SHIFT turns F1 into Section Remove
+        // SHIFT turns F1 into Section Remove and F6 into Unlink Variation
         display.setControlText2(label[0], isButtonPressed ? "Remove" : "Name");
         display.refreshControl(label[0]);
+        display.setControlText(label[5], isButtonPressed ? "Unlink" : "Make");
+        display.refreshControl(label[5]);
         display.synchronizeRefresh();
         return;
     }
@@ -528,11 +530,12 @@ void cSongEditor::refreshSongMarks()
 void cSongEditor::refreshToolsLabels()
 {
     static const char* const kText1[8] = { "Section", "Pattern", "Loop",  "Loop",
-                                           "Clone",   "Make",    "Block", "Unlink" };
+                                           "Clone",   "Make",    "Block", "Solo" };
     static const char* const kText2[8] = { "Name",     "Name",      "Section", "Selection",
-                                           "In Place", "Variation", "Colour",  "Variation" };
+                                           "In Place", "Variation", "Colour",  "Track" };
     // the ones that change the song need edit (REC) mode
-    static const bool kNeedsEdit[8] = { true, false, false, false, true, true, false, true };
+    static const bool kNeedsEdit[8] = { true, false, false, false, true, true, false, false };
+    const bool shift = buttons->isButtonPressed(interfaceButtonShift);
 
     display.setControlPosition(label[5], (800 / 8) * 5 + (800 / 16), -1);
     display.setControlPosition(label[6], (800 / 8) * 6 + (800 / 16), -1);
@@ -545,9 +548,17 @@ void cSongEditor::refreshToolsLabels()
     {
         display.setControlText(label[i], kText1[i]);
         display.setControlText2(label[i], kText2[i]);
-        if (i == 0 && buttons->isButtonPressed(interfaceButtonShift))
+        if (i == 0 && shift)
         {
             display.setControlText2(label[i], "Remove"); // SHIFT + F1 removes the section
+        }
+        if (i == 5 && shift)
+        {
+            display.setControlText(label[i], "Unlink"); // SHIFT + F6 unlinks a variation
+        }
+        if (i == 7 && soloTrack >= 0)
+        {
+            display.setControlText2(label[i], "ON");
         }
         display.setControlValue(label[i], kText2[i][0] != 0 ? 1 : 0);
 
@@ -656,8 +667,11 @@ void cSongEditor::showColourPickerLabels()
 {
     static const char* const kNames[8] = { "Red",  "Orange", "Yellow", "Green",
                                            "Cyan", "Blue",   "Purple", "Pink" };
-    // label colours: text, background, frame, second line - dark text on the bright ones,
-    // white on blue and purple, so every name stays easy to read
+    // label colours: text, background, frame, second line. The bottom labels have no
+    // background fill, so each name is written in its own colour on the dark screen -
+    // blue and purple use lighter shades so they stay bright and easy to read
+    static const uint32_t kTextShade[8] = { 0xFF3B30, 0xFF9500, 0xFFE000, 0x34D158,
+                                            0x00D4E6, 0x6FA8FF, 0xC99BFF, 0xFF5FB4 };
     static uint32_t pickerColours[8][4];
 
     const uint32_t* theme = display.getTheme().activeButtonLabelsColors;
@@ -669,11 +683,10 @@ void cSongEditor::showColourPickerLabels()
 
     for (uint8_t i = 0; i < 8; i++)
     {
-        uint32_t c = kTwistedBlockColours[i + 1];
-        uint32_t text = (i == 5 || i == 6) ? 0xFFFFFF : 0x000000;
+        uint32_t text = kTextShade[i];
 
         pickerColours[i][0] = text;
-        pickerColours[i][1] = c;
+        pickerColours[i][1] = theme[1];
         pickerColours[i][2] = theme[2];
         pickerColours[i][3] = text;
 

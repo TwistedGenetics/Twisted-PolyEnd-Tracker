@@ -28,7 +28,8 @@ The arrows, encoder, PLAY and REC keep working while the tools are showing.
 | F5 | **Clone In Place** — give this slot its own copy of the pattern | Yes |
 | F6 | **Make Variation** — give this slot a linked variation of the pattern | Yes |
 | F7 | **Block Colour** — colour the selected blocks | No |
-| F8 | **Unlink Variation** — make a variation an ordinary pattern | Yes |
+| SHIFT+F6 | **Unlink Variation** — make a variation an ordinary pattern | Yes |
+| F8 | **Solo Track** — solo the track under the grid cursor (again to end, restoring the previous mutes) | No |
 
 Buttons that need edit mode are greyed out until you press **REC**.
 
@@ -86,7 +87,7 @@ the original pattern is used. The pattern name is copied too.
   length.
 * Variations are marked with `~` in the song list: `~AMEN CHOP`.
 * A variation can be the original of another variation.
-* **F8 (Unlink Variation)** makes it an ordinary, independent pattern.
+* **SHIFT + F6 (Unlink Variation)** makes it an ordinary, independent pattern.
 
 Updates happen when the original pattern is saved to the workspace — when you
 switch patterns, go to another screen, or the Tracker autosaves — so a variation

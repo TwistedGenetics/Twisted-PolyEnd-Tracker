@@ -10,6 +10,7 @@
 #include "Platform.h"
 #include "mtPadBoard.h"
 #include "mtPadsBacklight.h"
+#include "mtAudioEngine.h"
 #include "mtStructs.h"
 #include "util_math.h"
 
@@ -76,7 +77,7 @@ static void functToolsLoopSelection();
 static void functToolsClone();
 static void functToolsVariation();
 static void functToolsBlockColour();
-static void functToolsUnlink();
+static void functToolsSolo();
 static void functPickColour0();
 static void functPickColour1();
 static void functPickColour2();
@@ -1951,7 +1952,7 @@ void cSongEditor::setToolsScreenFunct()
     ip->setButtonObj(interfaceButton4, buttonPress, functToolsClone);
     ip->setButtonObj(interfaceButton5, buttonPress, functToolsVariation);
     ip->setButtonObj(interfaceButton6, buttonPress, functToolsBlockColour);
-    ip->setButtonObj(interfaceButton7, buttonPress, functToolsUnlink);
+    ip->setButtonObj(interfaceButton7, buttonPress, functToolsSolo);
 }
 
 void cSongEditor::clearSongLoop()
@@ -2367,6 +2368,13 @@ static void functToolsVariation()
     {
         return;
     }
+
+    if (SE->buttons->isButtonPressed(interfaceButtonShift))
+    {
+        SE->unlinkSelectedSlot(); // SHIFT + F6
+        return;
+    }
+
     SE->cloneSelectedSlot(true);
 }
 
@@ -2476,13 +2484,13 @@ void cSongEditor::applyBlockColour(uint8_t colour)
     showMessage(kNames[colour], line2);
 }
 
-static void functToolsUnlink()
+static void functToolsSolo()
 {
-    if (SE->isBusy || needsEditMode())
+    if (SE->isBusy)
     {
         return;
     }
-    SE->unlinkSelectedSlot();
+    SE->toggleSoloSelectedTrack();
 }
 
 static void functKeyboardLeft()
@@ -2523,4 +2531,76 @@ static void functKeyboardCancel()
 static void functKeyboardSave()
 {
     SE->finishSectionNaming(true);
+}
+
+//------------------------------------------------------------------------------------- solo
+
+void cSongEditor::applyTrackMutes()
+{
+    for (uint8_t i = 0; i < kSampleTracks; i++)
+    {
+        engine.muteTrack(i, mtProject.values.trackMute[i]);
+    }
+}
+
+// solo the track under the cursor in the block grid; F8 again (on that track) ends the solo
+void cSongEditor::toggleSoloSelectedTrack()
+{
+    if (soloTrack >= 0 &&
+        (selectedPlace != 0 || songPlayerData.selection.startTrack == (uint8_t)soloTrack))
+    {
+        // back to the mutes from before the solo
+        memcpy(mtProject.values.trackMute, soloSavedMute, sizeof(soloSavedMute));
+        memcpy(mtProject.values.midiTrackMute, soloSavedMidiMute, sizeof(soloSavedMidiMute));
+        applyTrackMutes();
+        soloTrack = -1;
+
+        refreshToolsLabels();
+        refreshSongPlayerControl();
+        showMessage("Solo off", nullptr);
+        return;
+    }
+
+    if (selectedPlace != 0 || !songPlayerData.selection.isActive)
+    {
+        showMessage("Select a track in the block grid", nullptr);
+        return;
+    }
+
+    uint8_t track = songPlayerData.selection.startTrack;
+    if (track >= kAllTracks)
+    {
+        return;
+    }
+
+    if (soloTrack < 0)
+    {
+        memcpy(soloSavedMute, mtProject.values.trackMute, sizeof(soloSavedMute));
+        memcpy(soloSavedMidiMute, mtProject.values.midiTrackMute, sizeof(soloSavedMidiMute));
+    }
+
+    for (uint8_t i = 0; i < kSampleTracks; i++)
+    {
+        mtProject.values.trackMute[i] = (i == track) ? 0 : 1;
+    }
+    for (uint8_t i = 0; i < kMaxMidiTracksInTrackers; i++)
+    {
+        mtProject.values.midiTrackMute[i] = (i + kSampleTracks == track) ? 0 : 1;
+    }
+    applyTrackMutes();
+    soloTrack = (int8_t)track;
+
+    char line1[32];
+    if (track < kSampleTracks)
+    {
+        snprintf(line1, sizeof(line1), "Solo: Track %d", track + 1);
+    }
+    else
+    {
+        snprintf(line1, sizeof(line1), "Solo: MIDI Track %d", track - kSampleTracks + 1);
+    }
+
+    refreshToolsLabels();
+    refreshSongPlayerControl();
+    showMessage(line1, "F8 again to end the solo");
 }

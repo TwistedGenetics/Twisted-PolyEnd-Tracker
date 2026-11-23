@@ -202,7 +202,7 @@
     <b>Firmware:</b> Twisted PolyEnd Tracker, based on Polyend Tracker Community Edition 1.0.0<br>
     <b>For:</b> Tracker+ (the original Tracker builds too; the Tracker Mini has no song tools)<br>
     <b>Repository:</b> github.com/TwistedGenetics/Twisted-PolyEnd-Tracker<br>
-    <b>Manual version:</b> 1.3 · November 2026
+    <b>Manual version:</b> 1.4 · November 2026
   </div>
 </div>
 
@@ -300,7 +300,7 @@
       <div>Clone<small>In Place</small></div>
       <div>Make<small>Variation</small></div>
       <div>Block<small>Colour</small></div>
-      <div>Unlink<small>Variation</small></div>
+      <div>Solo<small>Track</small></div>
     </div>
   </div>
   <p class="caption">The tools page with REC on and a section loop running. Drums are coloured blue, bass red. The red lines across the blocks are section dividers; the red bar down the edge marks the looped slots. (The real screen is dark; the colours look the same.)</p>
@@ -315,13 +315,23 @@
     <tr><td class="key">F5</td><td><b>Clone In Place.</b> Give this slot its own copy of the pattern.</td><td class="yes">Yes</td></tr>
     <tr><td class="key">F6</td><td><b>Make Variation.</b> Give this slot a linked copy of the pattern.</td><td class="yes">Yes</td></tr>
     <tr><td class="key">F7</td><td><b>Block Colour.</b> Colour the selected blocks (see section 9).</td><td>No</td></tr>
-    <tr><td class="key">F8</td><td><b>Unlink Variation.</b> Turn a variation into an ordinary pattern.</td><td class="yes">Yes</td></tr>
+    <tr><td class="key">Shift+F6</td><td><b>Unlink Variation.</b> Turn a variation into an ordinary pattern. Holding <kbd>Shift</kbd> changes the F6 label to "Unlink".</td><td class="yes">Yes</td></tr>
+    <tr><td class="key">F8</td><td><b>Solo Track.</b> Solo the track under the cursor in the block grid; press again to end the solo (see below).</td><td>No</td></tr>
   </table>
   <ul>
     <li>Tools that change the song are greyed out until you press <kbd>Rec</kbd>. Pressing one without REC shows <i>Press REC to edit the song</i>.</li>
     <li>The arrows, encoder, <kbd>Play</kbd>, <kbd>Rec</kbd> and <kbd>Shift</kbd> work as usual while the tools are showing.</li>
     <li><kbd>Shift</kbd> + <kbd>Insert</kbd> still jumps to the top of the song.</li>
     <li>The Tracker remembers that the tools page was open when you leave the Song screen and come back.</li>
+  </ul>
+
+  <h3>Soloing a track</h3>
+  <p>In the block grid, move the cursor onto a block of the track you want to hear on its own and press <kbd>F8</kbd> (Solo Track). Every other track is muted, sample and MIDI tracks alike, and their blocks turn dim. The F8 label shows <b>ON</b>.</p>
+  <ul>
+    <li>Move to another track and press <kbd>F8</kbd> to solo that one instead.</li>
+    <li>Press <kbd>F8</kbd> on the soloed track, or from the song list, to end the solo. The tracks go back to the mutes they had before.</li>
+    <li>It works while the song plays and doesn't need REC.</li>
+    <li>If you change mutes elsewhere during a solo (mixer, pattern editor), ending the solo still restores the mutes from before it.</li>
   </ul>
 
   <h3>Naming patterns</h3>
@@ -473,7 +483,7 @@
   <p>If you're editing a variation when its original updates, your unsaved edits are saved first, so they stay yours and aren't overwritten.</p>
 
   <h3>Unlink a variation</h3>
-  <p>Select its slot, press <kbd>Rec</kbd>, then <kbd>F8</kbd> (Unlink Variation). It keeps its current notes and becomes an ordinary pattern. The <code>~</code> disappears.</p>
+  <p>Select its slot, press <kbd>Rec</kbd>, then <kbd>Shift</kbd> + <kbd>F6</kbd> (Unlink Variation). It keeps its current notes and becomes an ordinary pattern. The <code>~</code> disappears.</p>
 
   <div class="note"><b>Example</b>Make three variations of your main jungle break for verse 2, verse 3 and the outro. Change only the snare track in each one. If you then tweak the kick or hats in the original, all three variations get the new kick and hats, but each keeps its own snare.</div>
 </section>
@@ -493,17 +503,17 @@
   <div class="screen">
     <div class="title">Block Colour:  DELETE clears,  INSERT cancels</div>
     <div class="labels">
-      <div class="sw c1">Red</div>
-      <div class="sw c2">Orange</div>
-      <div class="sw c3">Yellow</div>
-      <div class="sw c4">Green</div>
-      <div class="sw c5">Cyan</div>
-      <div class="sw c6 light">Blue</div>
-      <div class="sw c7 light">Purple</div>
-      <div class="sw c8">Pink</div>
+      <div class="sw"><span class="swatch c1"></span>Red</div>
+      <div class="sw"><span class="swatch c2"></span>Orange</div>
+      <div class="sw"><span class="swatch c3"></span>Yellow</div>
+      <div class="sw"><span class="swatch c4"></span>Green</div>
+      <div class="sw"><span class="swatch c5"></span>Cyan</div>
+      <div class="sw"><span class="swatch c6"></span>Blue</div>
+      <div class="sw"><span class="swatch c7"></span>Purple</div>
+      <div class="sw"><span class="swatch c8"></span>Pink</div>
     </div>
   </div>
-  <p class="caption">The colour picker: F1 to F8 are the colours. Each name is printed on its own colour, in big, high-contrast text.</p>
+  <p class="caption">The colour picker: F1 to F8 are the colours. On the Tracker each name is written in big text in its own colour (lighter shades for Blue and Purple, so they read clearly on the dark screen).</p>
 
   <ul>
     <li>A message confirms the colour and how many blocks changed, and the tools come back.</li>
@@ -679,7 +689,8 @@
     <tr><td>Loop highlighted slots</td><td><kbd>Shift</kbd> + arrows in the grid, then <kbd>F4</kbd></td></tr>
     <tr><td>Separate copy for one slot</td><td><kbd>Rec</kbd>, select slot, <kbd>F5</kbd></td></tr>
     <tr><td>Linked variation for one slot</td><td><kbd>Rec</kbd>, select slot, <kbd>F6</kbd></td></tr>
-    <tr><td>Unlink a variation</td><td><kbd>Rec</kbd>, select slot, <kbd>F8</kbd></td></tr>
+    <tr><td>Unlink a variation</td><td><kbd>Rec</kbd>, select slot, <kbd>Shift</kbd> + <kbd>F6</kbd></td></tr>
+    <tr><td>Solo a track</td><td>Cursor on the track in the grid, <kbd>Insert</kbd>, <kbd>F8</kbd> (again to end)</td></tr>
     <tr><td>Colour blocks</td><td>Select blocks, <kbd>Insert</kbd>, <kbd>F7</kbd>, pick <kbd>F1</kbd>–<kbd>F8</kbd></td></tr>
     <tr><td>Remove colour</td><td>Select blocks, <kbd>Insert</kbd>, <kbd>F7</kbd>, <kbd>Delete</kbd></td></tr>
     <tr><td>Back to normal song buttons</td><td><kbd>Insert</kbd></td></tr>
