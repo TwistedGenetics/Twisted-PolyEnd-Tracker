@@ -177,6 +177,8 @@ class SubSynthVoice : public PresetVoice<SubSynthVoice, SubParamId>
         }
         if (!active)
         {
+            accS = acc ? 1.0f : 0.0f; // from silence: no glide needed
+            velS = vel;
             ph = 0.5f; // the saw from its zero crossing
             sph = 0.0f;
             ladder.reset(0.002f);
@@ -223,6 +225,7 @@ class SubSynthVoice : public PresetVoice<SubSynthVoice, SubParamId>
   private:
     static constexpr int kCtl = 32;
     bool gate = false, active = false, acc = false;
+    float accS = 0.0f, velS = 1.0f; // accent / velocity, glided
     float vel = 1.0f;
     int noteNum = 60;
     float pitch = 36.0f, target = 36.0f;
@@ -289,11 +292,15 @@ class SubSynthVoice : public PresetVoice<SubSynthVoice, SubParamId>
                 pitch += d * tickCoef(p[SP_GLIDE], kCtl);
         }
 
+        // accent and velocity glide to each new note's values over a few ms: a step in level or cutoff
+        // between notes clicked (heard most against other tracks)
+        accS += ((acc ? 1.0f : 0.0f) - accS) * 0.15f;
+        velS += (vel - velS) * 0.15f;
+
         ampNow = ampNext;
         float an = a * 0.787f;
-        if (acc)
-            an += an * p[SP_ACC] / 254.0f; // accent: louder by up to half again
-        an *= 1.0f - (p[SP_VEL] / 127.0f) * (1.0f - vel);
+        an += an * accS * p[SP_ACC] / 254.0f; // accent: louder by up to half again
+        an *= 1.0f - (p[SP_VEL] / 127.0f) * (1.0f - velS);
         ampNext = active ? an : 0.0f;
 
         inc = noteToInc(pitch);
@@ -321,8 +328,8 @@ class SubSynthVoice : public PresetVoice<SubSynthVoice, SubParamId>
 
         // the cutoff: CUT, the filter envelope (with accent), the keys, accent, the LFO (steps of 0..127)
         const float steps = static_cast<float>(p[SP_CUT]) +
-                            fenv * (static_cast<float>(p[SP_ENV]) + (acc ? p[SP_ACC] / 6.0f : 0.0f)) +
-                            (noteNum - 60) * 1.168f * p[SP_KEY] / 127.0f + (acc ? p[SP_ACC] * 8.0f / 256.0f : 0.0f) +
+                            fenv * (static_cast<float>(p[SP_ENV]) + accS * p[SP_ACC] / 6.0f) +
+                            (noteNum - 60) * 1.168f * p[SP_KEY] / 127.0f + accS * p[SP_ACC] * 8.0f / 256.0f +
                             lfoVal * p[SP_LDEPTH];
         const float k = p[SP_RES] * 4.25f / 127.0f;
         ladder.set(cutoffHz(steps), k);

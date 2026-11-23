@@ -129,6 +129,18 @@ void cSamplePlayback::initDisplayControls()
     prop.h = 2;
     prop.data = &wtPosition;
     wtPositionCursor = display.createControl<cWtProgress>(&prop);
+
+    // Twisted: a synth has no sample to show here: say so, in big text, instead of a blank screen
+    strControlProperties prop3;
+    prop3.text = nullptr;
+    prop3.colors = display.getTheme().activeLabelsColors;
+    prop3.value = 1;
+    prop3.style = controlStyleCenterX | controlStyleCenterY | controlStyleFont4;
+    prop3.x = 400;
+    prop3.y = 230;
+    prop3.w = 760;
+    prop3.h = 120;
+    synthInfoLabel = display.createControl<cLabel>(&prop3);
 }
 
 void cSamplePlayback::showTitleBar()

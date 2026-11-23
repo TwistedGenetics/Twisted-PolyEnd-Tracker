@@ -156,6 +156,7 @@ class cSamplePlayback : public ModuleBase
     hControl granularCursor;
     hControl wtPositionCursor;
     hControl bgLabel;
+    hControl synthInfoLabel = nullptr; // Twisted: what this screen shows for a synth instrument
 
     uint8_t selectedPlace = 6;
 

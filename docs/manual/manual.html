@@ -202,7 +202,7 @@
     <b>Firmware:</b> Twisted PolyEnd Tracker, based on Polyend Tracker Community Edition 1.0.0<br>
     <b>For:</b> Tracker+ (the original Tracker builds too; the Tracker Mini has no song tools)<br>
     <b>Repository:</b> github.com/TwistedGenetics/Twisted-PolyEnd-Tracker<br>
-    <b>Manual version:</b> 3.2 · November 2026
+    <b>Manual version:</b> 3.3 · November 2026
   </div>
 </div>
 
@@ -908,6 +908,8 @@
     <tr><td>The Tracker stalls or hangs moving around the menus with CRAFTY (before v1.16.0)</td><td>Fixed in v1.16.0: CRAFTY re-read its user file and re-imported every wavetable each time a CRAFTY voice was made. It now only re-reads <code>/Crafty</code> when something in it has changed.</td></tr>
     <tr><td>The Tracker freezes playing CRAFTY, or turning Bank 1 / Bank 2 (before v1.17.0)</td><td>Fixed in v1.17.0. Getting a wavetable bank ready takes several milliseconds, and CRAFTY did it inside the audio: a bank the mod matrix moved (a <b>Dest</b> of Bank 1 or Bank 2) did it again and again and froze the Tracker. Banks are now got ready between screen updates; when a bank changes, the old one plays for a moment first. Random Patch no longer routes mod to the banks.</td></tr>
     <tr><td>"Restarted after a freeze" when the Tracker starts (v1.19.0 and later)</td><td>The Tracker crashed or froze and restarted itself instead of staying stuck. Before, a crash looked like a freeze until you switched it off; now the Tracker notes where it was, restarts, and adds the details to <code>TwistedCrash.txt</code> on the SD card. Send that file's last lines so the cause can be found. The freeze watch only acts when the Tracker hasn't come round its main loop for 10 seconds while nothing is loading, saving or exporting.</td></tr>
+    <tr><td>The Sample Playback screen freezes after the first key with a synth selected (before v1.19.2)</td><td>Fixed: with a synth instrument the screen now says <b>This is a synth instrument / Press PARAMS to edit it</b>, and the keys just play the synth.</td></tr>
+    <tr><td>A faint click from SUB between notes (before v1.19.2)</td><td>Fixed: SUB's accent and velocity now glide to each new note's values over a few milliseconds instead of jumping.</td></tr>
     <tr><td>My DX7 banks don't show</td><td>Check they're 32-voice banks (4104-byte <code>.syx</code>) directly in <code>/DX7</code>, then choose DX7 again or reload the project. Single-voice sysex files aren't read.</td></tr>
     <tr><td>My wavetables don't show as USER banks</td><td>Check they're WAV files in <code>/Crafty/Wavetables</code> (not a sub-folder), then choose CRAFTY again or reload the project. Files with frames longer than 4096 samples, or unreadable WAVs, are skipped.</td></tr>
     <tr><td>A CRAFTY instrument is silent</td><td>Up to four CRAFTY instruments can play at once (there are only three SYN slots, so this shouldn't happen). Choose the model again or reload the project.</td></tr>

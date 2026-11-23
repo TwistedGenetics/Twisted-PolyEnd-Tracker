@@ -58,6 +58,7 @@ static void functAutoSlicConfirmOverwrite();
 static void functCancelOverwrite();
 
 static void functPads(uint8_t pad, uint8_t state, int16_t velo);
+static void functSynthPads(uint8_t pad, uint8_t state, int16_t velo);
 
 static void functMenu(uint8_t state);
 
@@ -87,6 +88,12 @@ constexpr uint32_t PLAY_REFRESH_US = 5000;
 
 void cSamplePlayback::update()
 {
+    if (mtProject.values.lastUsedInstrument >= kSampleInstrumentsCount)
+    {
+        displayedTrack = kNoTrack; // Twisted: a synth: no sample, no progress to follow
+        return;
+    }
+
     refreshLiveParams();
 
     if (refreshSpectrum)
@@ -301,9 +308,18 @@ void cSamplePlayback::start(uint32_t options)
 
     if (mtProject.values.lastUsedInstrument >= kSampleInstrumentsCount)
     {
+        // Twisted: a synth instrument. Its keys play it straight through the sequencer (the sample screen's own
+        // pad handler followed a sample player's progress that a synth never ends, and kept redrawing), and
+        // the screen says where to edit it.
         ip->setButtonObj(interfaceButtonInstr, functInstrument);
+        ip->setPadsGlobal(functSynthPads);
+        displayedTrack = kNoTrack;
         display.hideAllControls();
         showTitleBar();
+        display.setControlText(synthInfoLabel, "This is a synth instrument");
+        display.setControlText2(synthInfoLabel, "Press PARAMS to edit it");
+        display.setControlShow(synthInfoLabel);
+        display.refreshControl(synthInfoLabel);
         display.synchronizeRefresh();
         return;
     }
@@ -674,6 +690,23 @@ static void functMiniMiddle(uint8_t state)
 }
 
 //==============================================================================================================
+// Twisted: the keys with a synth instrument selected: just play it
+static void functSynthPads(uint8_t pad, uint8_t state, int16_t velo)
+{
+    (void)velo;
+    const uint8_t note = mtPadBoard.getNoteFromPad(pad, false);
+    if (state == buttonPress)
+    {
+        padsBacklight.setFrontLayer(1, mtConfig.values.padsLightFront, pad);
+        sequencer.handleNoteOn(Sequencer::GRID_OUTSIDE_PATTERN, note, 127, pad);
+    }
+    else if (state == buttonRelease)
+    {
+        padsBacklight.setFrontLayer(0, 0, pad);
+        sequencer.handleNoteOff(Sequencer::GRID_OUTSIDE_PATTERN, note, 0, pad);
+    }
+}
+
 static void functPads(uint8_t pad, uint8_t state, int16_t velo)
 {
     (void)velo;
