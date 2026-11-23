@@ -1,5 +1,6 @@
 #include "Platform.h"
 #include "string.h"
+#include <cstdio>
 #include "util_math.h"
 #include <mtRandomNameGenerator.h>
 
@@ -4108,15 +4109,28 @@ const char* mtRandomNameGenerator::getRandomName(Timer* timer)
 
     //--------------------------------------
 
+    // Twisted: every name starts "TG - ", and each word starts with a capital ("TG - Nonchalant Cheese",
+    // "TG - Cake-Burn")
     if (!optional)
     {
-        // names like "nonchalant cheese"
-        sprintf(randomName, "%s %s", word1, word2);
+        snprintf(randomName, sizeof(randomName), "TG - %s %s", word1, word2);
     }
     else
     {
-        // names like "cake-burn"=
-        sprintf(randomName, "%s-%s", word1, word2);
+        snprintf(randomName, sizeof(randomName), "TG - %s-%s", word1, word2);
+    }
+
+    bool newWord = true;
+    for (char* c = randomName + 5; *c; c++)
+    {
+        if (*c == ' ' || *c == '-')
+        {
+            newWord = true;
+            continue;
+        }
+        if (newWord && *c >= 'a' && *c <= 'z')
+            *c = static_cast<char>(*c - 'a' + 'A');
+        newWord = false;
     }
 
     return randomName;
