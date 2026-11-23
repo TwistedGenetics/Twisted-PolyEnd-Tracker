@@ -222,7 +222,10 @@ void cr_fx_chorus(cr_fx_t *f, float x, float *l, float *r)
     *r = x * (1.f - 0.5f * f->ch_mix) + wr * f->ch_mix * 0.8f;
 }
 
-void cr_fx_reverb(cr_fx_t *f, float *l, float *r)
+#ifndef CR_HOT
+#define CR_HOT
+#endif
+CR_HOT void cr_fx_reverb(cr_fx_t *f, float *l, float *r)
 {
     const vmode_t *v = &VM[f->vmode];
     float in = 0.5f * (*l + *r), d, y[8], fb[8], wl = 0.f, wr = 0.f;
