@@ -2674,6 +2674,21 @@ static void functNote(uint8_t state)
 //-----------------------------------------------------------------------------------
 static void functInstrument(uint8_t state)
 {
+    // Twisted: Shift + Instr: CAPTURE what you just played
+    static bool capturing = false;
+    if (state == buttonPress && PTE->fillState == 0 && PTE->buttons->isButtonPressed(interfaceButtonShift))
+    {
+        capturing = true;
+        functCapture();
+        return;
+    }
+    if (capturing)
+    {
+        if (state == buttonRelease)
+            capturing = false;
+        return;
+    }
+
     if (mtPopups.isNoteKeyboardPopupActive())
     {
         mtPopups.toggleNoteKeyboardPopup();
