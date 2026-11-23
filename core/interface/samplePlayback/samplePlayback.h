@@ -13,6 +13,7 @@
 const char playModeFunctLabels[playModeCount][15] = {
     "1-Shot", "Forward Loop", "Backward Loop", "Pingpong Loop",
     "Slice",  "Beat Slice",   "Wavetable",     "Granular",
+    "Akaizer",
 
 };
 
@@ -258,6 +259,19 @@ class cSamplePlayback : public ModuleBase
 
     void showGranularPositionValue();
     void showGrainLengthValue();
+
+    //--------------------------------------------------------------
+    // Akaizer play mode (F3 = Stretch / Loop BPM, F4 = Cycle Len / Cycle Freq;
+    // pressing the selected button again switches between the two)
+    bool akaizerShowLoopBpm = false;
+    bool akaizerShowCycleFreq = false;
+    char akaizerStretchText[16];
+    char akaizerCycleText[16];
+    void showAkaizerLabels();
+    void showAkaizerStretchValue();
+    void showAkaizerCycleValue();
+    void modAkaizer(uint8_t place, int16_t value);
+    void setDefaultAkaizer(uint8_t place);
     void showShapeText();
     void showLoopTypeText();
 

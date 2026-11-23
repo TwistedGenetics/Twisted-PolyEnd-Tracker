@@ -245,6 +245,19 @@ const char* const fxDescriptions[FX_COUNT] = {
     "Sets the Grain Length for an Instrument in Granular Playback mode.\n\n"
     "0-50% maps 1ms to 100ms, 50-100% maps 100ms to 1000ms (clamped to sample length).\n\n"
     "From 0% to 100%.",
+    // Sequencer::strFxConsts::enFxType::FX_TYPE_AKAIZER_STRETCH,
+    "Destination: Sample \n\n"
+    "Sets the Stretch for an Instrument in Akaizer Playback mode, overriding the "
+    "instrument setting until the effect ends.\n\n"
+    "The value is the stretch in percent: 100 = original length, 200 = twice as long.\n\n"
+    "From 25 to 255.",
+    // Sequencer::strFxConsts::enFxType::FX_TYPE_AKAIZER_CYCLE,
+    "Destination: Sample \n\n"
+    "Sets the Cycle Length for an Instrument in Akaizer Playback mode, overriding the "
+    "instrument setting until the effect ends.\n\n"
+    "The value is the cycle length divided by 10: 80 = 800 samples. Short cycles sound "
+    "grainy and metallic, long ones smoother.\n\n"
+    "From 2 to 200.",
     // Sequencer::strFxConsts::enFxType::FX_TYPE_SEND_CC_A,
     "Destination: MIDI, Synth \n\nSends MIDI CC number set to A in MIDI Instrument Parameters."
     "\n"
@@ -537,6 +550,19 @@ const char* const fxDescriptions[FX_COUNT] = {
     "Sets the Grain Length for an Instrument in Granular Playback mode.\n\n"
     "0-50% maps 1ms to 100ms, 50-100% maps 100ms to 1000ms (clamped to sample length).\n\n"
     "From 0% to 100%.",
+    // Sequencer::strFxConsts::enFxType::FX_TYPE_AKAIZER_STRETCH,
+    "Destination: Sample \n\n"
+    "Sets the Stretch for an Instrument in Akaizer Playback mode, overriding the "
+    "instrument setting until the effect ends.\n\n"
+    "The value is the stretch in percent: 100 = original length, 200 = twice as long.\n\n"
+    "From 25 to 255.",
+    // Sequencer::strFxConsts::enFxType::FX_TYPE_AKAIZER_CYCLE,
+    "Destination: Sample \n\n"
+    "Sets the Cycle Length for an Instrument in Akaizer Playback mode, overriding the "
+    "instrument setting until the effect ends.\n\n"
+    "The value is the cycle length divided by 10: 80 = 800 samples. Short cycles sound "
+    "grainy and metallic, long ones smoother.\n\n"
+    "From 2 to 200.",
     // Sequencer::strFxConsts::enFxType::FX_TYPE_SEND_CC_A,
     "Destination: MIDI \n\nSends MIDI CC number set to A in MIDI Instrument Parameters."
     "\n"

@@ -512,6 +512,11 @@ void cSamplePlayback::showLoopPoint1Value()
     {
         return;
     }
+    if (editorInstrument->playMode == playModeAkaizer)
+    {
+        showAkaizerStretchValue();
+        return;
+    }
 
     if (playerEngine::isZeroInPointZone(editorInstrument->loopPoint1,
                                         editorInstrument->sample.length,
@@ -539,6 +544,11 @@ void cSamplePlayback::showLoopPoint2Value()
 {
     if (editorInstrument->playMode == playModeSingleShot)
     {
+        return;
+    }
+    if (editorInstrument->playMode == playModeAkaizer)
+    {
+        showAkaizerCycleValue();
         return;
     }
 
@@ -600,6 +610,12 @@ void cSamplePlayback::hideLoopPoints()
 
 void cSamplePlayback::showLoopPoints()
 {
+    if (editorInstrument->playMode == playModeAkaizer)
+    {
+        showAkaizerLabels();
+        return;
+    }
+
     display.setControlText(label[2], "Loop Start");
     display.setControlShow(label[2]);
     display.refreshControl(label[2]);
@@ -819,3 +835,78 @@ void cSamplePlayback::formatTimeSeconds(char* destBuffer, size_t destBufferSize,
 }
 
 //==============================================================================================================
+
+//==============================================================================================================
+// Akaizer play mode
+//==============================================================================================================
+
+void cSamplePlayback::showAkaizerLabels()
+{
+    display.setControlText(label[2], akaizerShowLoopBpm ? "Loop BPM" : "Stretch");
+    display.setControlText(label[3], akaizerShowCycleFreq ? "Cycle Freq" : "Cycle Len");
+    showAkaizerStretchValue();
+    showAkaizerCycleValue();
+}
+
+void cSamplePlayback::showAkaizerStretchValue()
+{
+    uint16_t bpm = akaizerSettings::loopBpm(*editorInstrument);
+
+    if (akaizerShowLoopBpm)
+    {
+        if (bpm == 0)
+        {
+            strcpy(akaizerStretchText, "Off");
+        }
+        else
+        {
+            snprintf(akaizerStretchText, sizeof(akaizerStretchText), "%d BPM", bpm);
+        }
+    }
+    else if (bpm != 0)
+    {
+        // the stretch follows the project tempo
+        int pct = (int)(100.0f * (float)bpm / mtProject.values.globalTempo + 0.5f);
+        snprintf(akaizerStretchText, sizeof(akaizerStretchText), "%d%% sync", pct);
+    }
+    else
+    {
+        snprintf(akaizerStretchText,
+                 sizeof(akaizerStretchText),
+                 "%d %%",
+                 akaizerSettings::stretchPercent(*editorInstrument));
+    }
+
+    display.setControlText(label[2], akaizerShowLoopBpm ? "Loop BPM" : "Stretch");
+    display.setControlText2(label[2], akaizerStretchText);
+    display.setControlShow(label[2]);
+    display.refreshControl(label[2]);
+}
+
+void cSamplePlayback::showAkaizerCycleValue()
+{
+    if (akaizerShowCycleFreq)
+    {
+        uint16_t f = akaizerSettings::cycleFrequency(*editorInstrument);
+        if (f == 0)
+        {
+            strcpy(akaizerCycleText, "Auto");
+        }
+        else
+        {
+            snprintf(akaizerCycleText, sizeof(akaizerCycleText), "%d cps", f);
+        }
+    }
+    else
+    {
+        snprintf(akaizerCycleText,
+                 sizeof(akaizerCycleText),
+                 "%d smp",
+                 akaizerSettings::cycleLength(*editorInstrument));
+    }
+
+    display.setControlText(label[3], akaizerShowCycleFreq ? "Cycle Freq" : "Cycle Len");
+    display.setControlText2(label[3], akaizerCycleText);
+    display.setControlShow(label[3]);
+    display.refreshControl(label[3]);
+}

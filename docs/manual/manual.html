@@ -196,13 +196,13 @@
   <div>
     <div class="kicker">Twisted PolyEnd Tracker · Firmware Manual</div>
     <h1>Twisted<br><span>Song Mode</span></h1>
-    <p class="sub">Named sections, live section looping, selection loops, clone in place, linked pattern variations, colour-coded blocks, pattern naming, and the Akaizer timestretch in the Sample Editor, for the Polyend Tracker+.</p>
+    <p class="sub">Named sections, live section looping, selection loops, clone in place, linked pattern variations, colour-coded blocks, pattern naming, and the Akaizer timestretch (in the Sample Editor, as a live play mode and as FX commands) for the Polyend Tracker+.</p>
   </div>
   <div class="meta">
     <b>Firmware:</b> Twisted PolyEnd Tracker, based on Polyend Tracker Community Edition 1.0.0<br>
     <b>For:</b> Tracker+ (the original Tracker builds too; the Tracker Mini has no song tools)<br>
     <b>Repository:</b> github.com/TwistedGenetics/Twisted-PolyEnd-Tracker<br>
-    <b>Manual version:</b> 1.2 · November 2026
+    <b>Manual version:</b> 1.3 · November 2026
   </div>
 </div>
 
@@ -220,9 +220,10 @@
     <li><span class="n">8</span> Linked variations</li>
     <li><span class="n">9</span> Block colours</li>
     <li><span class="n">10</span> Akaizer timestretch (Sample Editor)</li>
-    <li><span class="n">11</span> Projects, saving and compatibility</li>
-    <li><span class="n">12</span> Messages and troubleshooting</li>
-    <li><span class="n">13</span> Quick reference</li>
+    <li><span class="n">11</span> Akaizer play mode and FX commands</li>
+    <li><span class="n">12</span> Projects, saving and compatibility</li>
+    <li><span class="n">13</span> Messages and troubleshooting</li>
+    <li><span class="n">14</span> Quick reference</li>
   </ol>
 </section>
 
@@ -238,7 +239,7 @@
     <tr><td><b>Clone In Place</b></td><td>Give one slot its own copy of a pattern, so you can change it without changing every other place the pattern is used.</td></tr>
     <tr><td><b>Linked variations</b></td><td>A copy that keeps following the original on every track you haven't changed.</td></tr>
     <tr><td><b>Pattern names</b></td><td>Name a pattern from the song view. It's the same name the pattern editor shows, so a name set in either place shows in both.</td></tr>
-    <tr><td><b>Akaizer</b></td><td>The classic Akaizer timestretch as a Sample Editor effect, the same engine as Twisted Timestretch.</td></tr>
+    <tr><td><b>Akaizer</b></td><td>The classic Akaizer timestretch: as a Sample Editor effect, as a live <b>Akaizer play mode</b> for instruments, and as two FX commands (<code>K</code> Stretch, <code>Y</code> Cycle) that change it per step.</td></tr>
     <tr><td><b>Block colours</b></td><td>Colour-code the blocks in the song view with 8 colours (drums blue, bass red…). Colours move with blocks you copy.</td></tr>
   </table>
   <div class="note"><b>Your projects stay safe</b>Sections, variation links and block colours are kept in a separate file inside the project. Stock Polyend firmware ignores that file, so it still opens your projects. It just won't show the sections or colours, or keep variations linked.</div>
@@ -562,9 +563,65 @@
   <div class="note"><b>Faithful to the original</b>The engine was checked sample for sample against Twisted Timestretch's reference renders of Akaizer, and against its pitch engine. Same settings, same sound.</div>
 </section>
 
+<!-- ============================================================ akaizer live -->
+<section>
+  <h2>11 · Akaizer play mode and FX commands</h2>
+  <p>The <b>Akaizer</b> play mode stretches an instrument live, every time it plays. Change the tempo or the settings and the next note follows, with no re-render. Two FX commands change the stretch and the grain size step by step in a pattern.</p>
+
+  <h3>Set up an instrument</h3>
+  <ol class="steps">
+    <li>Open the instrument's <b>Sample Playback</b> screen.</li>
+    <li>In the play mode list (far right), choose <b>Akaizer</b>, at the bottom after Granular.</li>
+    <li>Set <b>Start</b> and <b>End</b> as for 1-Shot. The part between them is what gets stretched.</li>
+    <li>Set the Akaizer settings on <kbd>F3</kbd> and <kbd>F4</kbd> with the encoder or the arrows.</li>
+  </ol>
+
+  <div class="screen">
+    <div class="title">Sample Playback · Akaizer</div>
+    <div class="labels">
+      <div>Preview<small>-</small></div>
+      <div>Start<small>0.000 s</small></div>
+      <div>Stretch<small>125 %</small></div>
+      <div>Cycle Len<small>800 smp</small></div>
+      <div>End<small>1.846 s</small></div>
+      <div>Zoom<small>1.00</small></div>
+      <div class="off"> </div>
+      <div class="off">Akaizer</div>
+    </div>
+  </div>
+  <p class="caption">The Akaizer buttons. Press <kbd>F3</kbd> again to switch it to Loop BPM, and <kbd>F4</kbd> again to switch it to Cycle Freq.</p>
+
+  <table>
+    <tr><th>Button</th><th>Setting</th><th>Range</th><th>What it does</th></tr>
+    <tr><td class="key">F3</td><td><b>Stretch</b></td><td style="white-space:nowrap">25 – 2000 %</td><td>Length as a percentage of the Start–End part. Turning it switches tempo sync off.</td></tr>
+    <tr><td class="key">F3 again</td><td><b>Loop BPM</b></td><td style="white-space:nowrap">Off,<br>40 – 300</td><td>The tempo the sample is at. When set, the stretch follows the <b>project tempo</b> live: change the tempo and the loop follows. Stretch then shows "sync" and the percentage it works out to.</td></tr>
+    <tr><td class="key">F4</td><td><b>Cycle Len</b></td><td style="white-space:nowrap">20 – 2000 smp</td><td>Grain size (each grain is twice this). Short = grainy and metallic, long = smoother.</td></tr>
+    <tr><td class="key">F4 again</td><td><b>Cycle Freq</b></td><td style="white-space:nowrap">Auto,<br>20 – 2050 cps</td><td>How often grains are laid down. Auto = 41000 ÷ Cycle Len, as the original.</td></tr>
+  </table>
+  <ul>
+    <li><b>Pitch works like the original's "pitch, then stretch back to length".</b> Play the instrument higher or lower, or use Tune, Glide and the pitch FX: the pitch changes but the length stays at the stretch.</li>
+    <li>Reset a setting to its default the same way as on the other modes (it resets the one shown: Stretch 100 %, Loop BPM Off, Cycle Len 800, Cycle Freq Auto).</li>
+    <li>The rest of the instrument (envelopes, filter, FX sends) works as normal.</li>
+  </ul>
+
+  <h3>FX commands</h3>
+  <table>
+    <tr><th>FX</th><th>Value</th><th>Does</th></tr>
+    <tr><td><code>K</code> Akaizer Stretch</td><td>25 – 255</td><td>Stretch in percent while the effect lasts. <code>K100</code> = original length, <code>K200</code> = twice as long. It overrides both Stretch and Loop BPM.</td></tr>
+    <tr><td><code>Y</code> Akaizer Cycle</td><td>2 – 200</td><td>Cycle Len ÷ 10 while the effect lasts. <code>Y80</code> = 800 samples, <code>Y8</code> = 80 samples (very grainy).</td></tr>
+  </table>
+  <ul>
+    <li>They only affect instruments in Akaizer mode, and act on the note that's playing too: put <code>Y</code> on the steps after a long note to change its grain as it plays.</li>
+    <li>Like the other FX, an effect lasts until the track gets a different FX in that slot, or the effect ends.</li>
+    <li>With both FX slots set to the same command, the first slot wins.</li>
+  </ul>
+
+  <div class="note"><b>Live vs. the Sample Editor</b>The live mode follows the original's maths (grain spacing, rounding, length), and on the desktop came within about 50–60 dB of the offline Akaizer. It isn't sample-for-sample identical. Stereo is stretched per channel, without the original's stereo-file quirks. At most 8 grains overlap: very dense settings (long cycles with a high Cycle Freq) keep the newest grains. For the exact classic result, use the Sample Editor's Akaizer and play the rendered sample.</div>
+</section>
+
 <!-- ============================================================ 10 -->
 <section>
-  <h2>11 · Projects, saving and compatibility</h2>
+  <h2>12 · Projects, saving and compatibility</h2>
   <ul>
     <li>Sections, variation links and block colours are saved in the file <code>patterns/twistedSong</code> inside each project, next to the pattern files.</li>
     <li>They're saved and opened with the project as usual. You don't need to do anything extra.</li>
@@ -574,6 +631,7 @@
   <p>Stock firmware ignores <code>twistedSong</code>, so the project opens and plays normally.</p>
   <ul>
     <li>Sections and block colours aren't shown.</li>
+    <li>Instruments in Akaizer play mode don't play on stock firmware (it doesn't know the mode), and <code>K</code> / <code>Y</code> FX are ignored. Switch an instrument to another mode, or render it with the Sample Editor's Akaizer, before sharing.</li>
     <li>Variations play as ordinary patterns with the notes they had when last saved.</li>
     <li>Edits made on stock firmware don't update variations. When you're back on Twisted firmware, the links resume from the next time an original is saved.</li>
   </ul>
@@ -582,7 +640,7 @@
 
 <!-- ============================================================ 10 -->
 <section>
-  <h2>12 · Messages and troubleshooting</h2>
+  <h2>13 · Messages and troubleshooting</h2>
   <table>
     <tr><th>Message or problem</th><th>Meaning / what to do</th></tr>
     <tr><td><b>Press REC to edit the song</b></td><td>That tool changes the song. Turn on edit mode with <kbd>Rec</kbd> first.</td></tr>
@@ -595,6 +653,8 @@
     <tr><td>A variation didn't update</td><td>The original hasn't been saved yet. Switch pattern or screen, then check again. If you changed that track in the variation, it no longer follows by design.</td></tr>
     <tr><td><b>Stretched sample is too long!</b></td><td>The Akaizer result would be over about 44 seconds. Lower Stretch, or stretch a shorter selection.</td></tr>
     <tr><td>A pattern name doesn't show in the pattern editor title</td><td>The title shows pattern info instead of the name when <b>Pattern info</b> is turned on in the Tracker's Config.</td></tr>
+    <tr><td>Granular settings reset after trying Akaizer</td><td>Akaizer keeps its settings where Granular keeps its own. After you've edited Akaizer settings, going back to Granular starts it from the defaults.</td></tr>
+    <tr><td>K / Y FX do nothing</td><td>They only act on instruments in Akaizer play mode.</td></tr>
     <tr><td>A block I coloured shows no colour</td><td>Only blocks with notes are coloured. Add notes to that track and the colour appears.</td></tr>
     <tr><td>Colouring one slot coloured others too</td><td>Those slots play the same pattern. Use Clone In Place (<kbd>F5</kbd>) first to give the slot its own pattern.</td></tr>
     <tr><td>Insert doesn't open the tools</td><td>Check that you're running the Twisted firmware and are on the Song screen. The Tracker Mini has no song tools.</td></tr>
@@ -604,7 +664,7 @@
 
 <!-- ============================================================ 11 -->
 <section>
-  <h2>13 · Quick reference</h2>
+  <h2>14 · Quick reference</h2>
   <table>
     <tr><th>Do this</th><th>Press</th></tr>
     <tr><td>Open / close song tools</td><td><kbd>Insert</kbd> on the Song screen</td></tr>
@@ -612,6 +672,8 @@
     <tr><td>Remove a section</td><td><kbd>Rec</kbd>, select a slot in it, <kbd>Shift</kbd> + <kbd>F1</kbd></td></tr>
     <tr><td>Name a pattern</td><td>Select slot, <kbd>F2</kbd>, type, <kbd>F8</kbd></td></tr>
     <tr><td>Akaizer a sample</td><td>Sample Editor, choose <b>Akaizer</b>, set, Preview, Apply</td></tr>
+    <tr><td>Live Akaizer instrument</td><td>Sample Playback, play mode <b>Akaizer</b>, <kbd>F3</kbd> / <kbd>F4</kbd> (press again for the other setting)</td></tr>
+    <tr><td>Stretch / grain per step</td><td>FX <code>K</code> (stretch %), <code>Y</code> (cycle ÷ 10)</td></tr>
     <tr><td>Loop the current section</td><td><kbd>F3</kbd> (again to stop)</td></tr>
     <tr><td>Jump to another section live</td><td>Loop Section on, select a slot in the other section while playing</td></tr>
     <tr><td>Loop highlighted slots</td><td><kbd>Shift</kbd> + arrows in the grid, then <kbd>F4</kbd></td></tr>

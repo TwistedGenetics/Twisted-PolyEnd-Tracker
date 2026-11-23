@@ -124,7 +124,7 @@ const uint8_t PATTERN_INDEX_MIN = 1;
 const uint8_t PATTERN_INDEX_MAX = 255;
 
 const uint8_t FX_MAX = 49;
-const uint8_t FX_COUNT = 46;
+const uint8_t FX_COUNT = 48;
 const uint8_t FX_COUNT_HIDDEN_FXes = 1; // ile fxów na końcu listy jest ukrytych
 
 const uint8_t FX_VALUE_MAX = 127;
@@ -392,6 +392,7 @@ enum instrumentPlayMode
     playModeBeatSlice,
     playModeWavetable, // tylko na uzytek interface - sample type obsługuje to w silniku
     playModeGranular,
+    playModeAkaizer, // Twisted: live Akaizer timestretch (settings in strInstrument::granular)
     playModeCount
 };
 
@@ -732,6 +733,94 @@ struct strInstrument
 static_assert(sizeof(strInstrument) == 372, "strInstrument size must remain 372 bytes");
 
 //----------------------------------------------------------------------------------
+// Akaizer play mode settings. The instrument file has no spare room, so Akaizer keeps its
+// settings in the granular fields, which nothing uses in this mode:
+//   granular.grainLength            cycle length, 20..2000 samples
+//   granular.currentPosition        stretch 25..2000 %, or kAkaizerBpmFlag | loop BPM (40..300)
+//   granular.shape | type << 8      cycle frequency, 0 = linked (41000 / cycle length), 20..2050
+//   granular.type bit 7             marks that the fields hold Akaizer settings
+// Until an Akaizer setting is edited the fields are left alone and the defaults are used,
+// so scrolling past Akaizer in the play mode list never loses granular settings.
+namespace akaizerSettings
+{
+static constexpr uint8_t kDataMark = 0x80;
+static constexpr uint16_t kBpmFlag = 0x8000;
+static constexpr uint16_t kDefaultStretch = 100, kMinStretch = 25, kMaxStretch = 2000;
+static constexpr uint16_t kDefaultCycle = 800, kMinCycle = 20, kMaxCycle = 2000;
+static constexpr uint16_t kMinFreq = 20, kMaxFreq = 2050;
+static constexpr uint16_t kMinBpm = 40, kMaxBpm = 300;
+
+inline bool hasData(const strInstrument& i)
+{
+    return (i.granular.type & kDataMark) != 0;
+}
+
+inline uint16_t clampU16(uint16_t v, uint16_t lo, uint16_t hi)
+{
+    return v < lo ? lo : (v > hi ? hi : v);
+}
+
+inline uint16_t cycleLength(const strInstrument& i)
+{
+    return hasData(i) ? clampU16(i.granular.grainLength, kMinCycle, kMaxCycle) : kDefaultCycle;
+}
+
+// 0 = linked to the cycle length
+inline uint16_t cycleFrequency(const strInstrument& i)
+{
+    if (!hasData(i))
+    {
+        return 0;
+    }
+    uint16_t f = (uint16_t)(i.granular.shape | ((i.granular.type & 0x7F) << 8));
+    return f == 0 ? 0 : clampU16(f, kMinFreq, kMaxFreq);
+}
+
+// 0 = off (the Stretch % is used)
+inline uint16_t loopBpm(const strInstrument& i)
+{
+    if (!hasData(i) || !(i.granular.currentPosition & kBpmFlag))
+    {
+        return 0;
+    }
+    return clampU16(i.granular.currentPosition & 0x7FFF, kMinBpm, kMaxBpm);
+}
+
+inline uint16_t stretchPercent(const strInstrument& i)
+{
+    if (!hasData(i) || (i.granular.currentPosition & kBpmFlag))
+    {
+        return kDefaultStretch;
+    }
+    return clampU16(i.granular.currentPosition, kMinStretch, kMaxStretch);
+}
+
+// write all four (bpm 0 = use the stretch %)
+inline void set(strInstrument& i, uint16_t stretch, uint16_t bpm, uint16_t cycle, uint16_t freq)
+{
+    i.granular.grainLength = clampU16(cycle, kMinCycle, kMaxCycle);
+    i.granular.currentPosition =
+      bpm ? (uint16_t)(kBpmFlag | clampU16(bpm, kMinBpm, kMaxBpm))
+          : clampU16(stretch, kMinStretch, kMaxStretch);
+    uint16_t f = freq == 0 ? 0 : clampU16(freq, kMinFreq, kMaxFreq);
+    i.granular.shape = (uint8_t)(f & 0xFF);
+    i.granular.type = (uint8_t)(kDataMark | ((f >> 8) & 0x7F));
+}
+
+// leaving Akaizer for Granular: give Granular sane settings back
+inline void clearForGranular(strInstrument& i)
+{
+    if (hasData(i))
+    {
+        i.granular.grainLength = 441;
+        i.granular.currentPosition = 0;
+        i.granular.shape = 0;
+        i.granular.type = 0;
+    }
+}
+} // namespace akaizerSettings
+
+//----------------------------------------------------------------------------------
 const strInstrument defaultInstrumentParams = {
     .isActive = 0,
     .sample = { 0, {}, nullptr, 0, 2048, 0 },
@@ -783,7 +872,7 @@ static constexpr uint32_t kClmtElementCount = 64;
 
 inline bool isPlayModeStreamable(uint8_t playMode)
 {
-    if (playMode == playModeWavetable || playMode == playModeGranular)
+    if (playMode == playModeWavetable || playMode == playModeGranular || playMode == playModeAkaizer)
     {
         return false;
     }

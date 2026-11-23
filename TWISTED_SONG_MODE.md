@@ -122,6 +122,20 @@ for sample against its reference renders) is a built-in Sample Editor effect:
 **Loop BPM** Off or 40–300 (stretch from that tempo to the project tempo).
 Code: `core/effector/akaizerCore.h`, `core/effector/mtEffectAkaizer.*`.
 
+## Akaizer play mode and FX
+
+**Akaizer** is also an instrument play mode (Sample Playback, after Granular): the
+Start–End part is stretched live on every note. F3 = Stretch (press again: Loop
+BPM, which follows the project tempo), F4 = Cycle Len (press again: Cycle Freq).
+Note pitch works like the original's "repitch, then stretch back to length".
+Settings are stored in the instrument's granular fields (marked with bit 7 of
+`granular.type`), so the instrument file format is unchanged.
+
+FX: **K – Akaizer Stretch** (25–255 %), **Y – Akaizer Cycle** (cycle ÷ 10, 2–200),
+using the reserved FX slots R2/R3 so stock firmware ignores them.
+Code: `core/libs/Audio/play_memory_akaizer.cpp`, `core/source/mtStructs.h`
+(`akaizerSettings`), `core/interface/samplePlayback/*`, `core/AudioEngine/mtAudioSequencer.cpp`.
+
 ## Files
 
 | File | What |

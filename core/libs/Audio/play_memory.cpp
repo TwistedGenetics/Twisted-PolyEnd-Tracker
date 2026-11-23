@@ -148,6 +148,7 @@ AUDIO_CORE_RAM void AudioPlayMemory::update(void)
         case playModeSlice: block = updateSlice(); break;
         case playModeBeatSlice: block = updateBeatSlice(); break;
         case playModeGranular: block = updateGranular(); break;
+        case playModeAkaizer: block = updateAkaizer(); break;
         case playModeWavetable: block = updateWavetable(); break;
         default: break;
     }
@@ -194,6 +195,7 @@ AUDIO_CORE_FLASH uint8_t AudioPlayMemory::play(uint8_t instrIdx, int8_t note)
         case playModeSlice: playSlice(instrIdx, note); break;
         case playModeBeatSlice: playBeatSlice(instrIdx, note); break;
         case playModeGranular: playGranular(instrIdx, note); break;
+        case playModeAkaizer: playAkaizer(instrIdx, note); break;
         case playModeWavetable: playWavetable(instrIdx, note); break;
         default: return 0;
     }
@@ -1147,7 +1149,8 @@ void AudioPlayMemory::refreshStartParameters()
     currentSampleLength = mtProject.instrument[currentInstrIdx].sample.length;
 
     currentIsStreamed = (currentPlayMode != playModeWavetable &&
-                         currentPlayMode != playModeGranular) &&
+                         currentPlayMode != playModeGranular &&
+                         currentPlayMode != playModeAkaizer) &&
                         mtProject.sampleMemory[currentInstrIdx].isStreamed;
     currentPreCacheFrames = mtProject.sampleMemory[currentInstrIdx].preCacheFrames;
     currentSliceCacheAddress = nullptr;

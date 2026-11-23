@@ -44,6 +44,8 @@ AUDIO_CORE_RAM void playerEngine::seqFx(uint8_t fx_id, uint8_t fx_val, uint8_t f
         fx_id == Sequencer::strFxConsts::FX_TYPE_OVERDRIVE ||
         fx_id == Sequencer::strFxConsts::FX_TYPE_TUNE ||
         fx_id == Sequencer::strFxConsts::FX_TYPE_GRANULAR_LENGTH ||
+        fx_id == Sequencer::strFxConsts::FX_TYPE_AKAIZER_STRETCH ||
+        fx_id == Sequencer::strFxConsts::FX_TYPE_AKAIZER_CYCLE ||
         fx_id == Sequencer::strFxConsts::FX_TYPE_VOLUME));
     if (!skipEndFx)
     {
@@ -71,6 +73,8 @@ AUDIO_CORE_RAM void playerEngine::seqFx(uint8_t fx_id, uint8_t fx_val, uint8_t f
         case Sequencer::strFxConsts::FX_TYPE_OVERDRIVE: fxOverdrive(fx_val, fx_n); break;
         case Sequencer::strFxConsts::FX_TYPE_TUNE: fxTune(fx_val, fx_n); break;
         case Sequencer::strFxConsts::FX_TYPE_GRANULAR_LENGTH: fxGranularLength(fx_val, fx_n); break;
+        case Sequencer::strFxConsts::FX_TYPE_AKAIZER_STRETCH: fxAkaizerStretch(fx_val, fx_n); break;
+        case Sequencer::strFxConsts::FX_TYPE_AKAIZER_CYCLE: fxAkaizerCycle(fx_val, fx_n); break;
         case Sequencer::strFxConsts::FX_TYPE_R7: break;
         case Sequencer::strFxConsts::FX_TYPE_R8: break;
         case Sequencer::strFxConsts::FX_TYPE_R9: break;
@@ -129,6 +133,8 @@ AUDIO_CORE_RAM void playerEngine::endFx(uint8_t fx_id, uint8_t fx_n)
         case Sequencer::strFxConsts::FX_TYPE_OVERDRIVE: endFxOverdrive(fx_n); break;
         case Sequencer::strFxConsts::FX_TYPE_TUNE: endFxTune(fx_n); break;
         case Sequencer::strFxConsts::FX_TYPE_GRANULAR_LENGTH: endFxGranularLength(fx_n); break;
+        case Sequencer::strFxConsts::FX_TYPE_AKAIZER_STRETCH: endFxAkaizerStretch(fx_n); break;
+        case Sequencer::strFxConsts::FX_TYPE_AKAIZER_CYCLE: endFxAkaizerCycle(fx_n); break;
         case Sequencer::strFxConsts::FX_TYPE_R7: break;
         case Sequencer::strFxConsts::FX_TYPE_R8: break;
         case Sequencer::strFxConsts::FX_TYPE_R9: break;
@@ -2846,4 +2852,50 @@ void playerEngine::syncFxAmpLFO()
         playMemPtr[channel]->envelopeSetIsRandom(isAmpRandom);
         playMemPtr[channel]->envelopeNoteOn(currentInstrument_idx, currentNote);
     }
+}
+
+//******* Twisted: Akaizer play mode FX
+// The first FX slot wins when both set the same thing, as with the other FX.
+void playerEngine::applyAkaizerFx()
+{
+    uint8_t stretch = akaizerFxStretch[MOST_SIGNIFICANT_FX] ? akaizerFxStretch[MOST_SIGNIFICANT_FX]
+                                                            : akaizerFxStretch[LEAST_SIGNIFICANT_FX];
+    uint8_t cycle = akaizerFxCycle[MOST_SIGNIFICANT_FX] ? akaizerFxCycle[MOST_SIGNIFICANT_FX]
+                                                        : akaizerFxCycle[LEAST_SIGNIFICANT_FX];
+
+    for (int channel = 0; channel < (int)playMemPtr.size(); channel++)
+    {
+        playMemPtr[channel]->setAkaizerStretchOverride(stretch);       // percent, 0 = off
+        playMemPtr[channel]->setAkaizerCycleOverride((uint16_t)cycle * 10); // samples, 0 = off
+    }
+}
+
+void playerEngine::fxAkaizerStretch(uint8_t fx_val, uint8_t fx_n)
+{
+    akaizerFxStretch[fx_n & 1] = (uint8_t)clamp<int>(
+      fx_val,
+      sequencer.getFxMin(Sequencer::strFxConsts::FX_TYPE_AKAIZER_STRETCH),
+      sequencer.getFxMax(Sequencer::strFxConsts::FX_TYPE_AKAIZER_STRETCH));
+    applyAkaizerFx();
+}
+
+void playerEngine::fxAkaizerCycle(uint8_t fx_val, uint8_t fx_n)
+{
+    akaizerFxCycle[fx_n & 1] = (uint8_t)clamp<int>(
+      fx_val,
+      sequencer.getFxMin(Sequencer::strFxConsts::FX_TYPE_AKAIZER_CYCLE),
+      sequencer.getFxMax(Sequencer::strFxConsts::FX_TYPE_AKAIZER_CYCLE));
+    applyAkaizerFx();
+}
+
+void playerEngine::endFxAkaizerStretch(uint8_t fx_n)
+{
+    akaizerFxStretch[fx_n & 1] = 0;
+    applyAkaizerFx();
+}
+
+void playerEngine::endFxAkaizerCycle(uint8_t fx_n)
+{
+    akaizerFxCycle[fx_n & 1] = 0;
+    applyAkaizerFx();
 }

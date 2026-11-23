@@ -734,6 +734,14 @@ class playerEngine
     void fxAmpEnv(uint8_t fx_val, uint8_t fx_n);
     void fxFilterEnv(uint8_t fx_val, uint8_t fx_n);
     void fxGranularLength(uint8_t fx_val, uint8_t fx_n);
+    // Twisted: Akaizer play mode FX (K = stretch %, Y = cycle length / 10)
+    void fxAkaizerStretch(uint8_t fx_val, uint8_t fx_n);
+    void fxAkaizerCycle(uint8_t fx_val, uint8_t fx_n);
+    void endFxAkaizerStretch(uint8_t fx_n);
+    void endFxAkaizerCycle(uint8_t fx_n);
+    void applyAkaizerFx();
+    uint8_t akaizerFxStretch[2] = { 0, 0 }; // per FX slot, 0 = not set
+    uint8_t akaizerFxCycle[2] = { 0, 0 };
     void endFxAmpEnv(uint8_t fx_n);
     void endFxFilterEnv(uint8_t fx_n);
     void endFxGranularLength(uint8_t fx_n);

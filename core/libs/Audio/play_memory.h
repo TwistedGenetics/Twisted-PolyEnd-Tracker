@@ -152,6 +152,12 @@ class AudioPlayMemory : public AudioStream
     void clearPointsForceFlag();
     void setForcedPoints(int32_t sp, int32_t lp1, int32_t lp2, int32_t ep); // -1 nie nadpisuje
     //*********
+    //************Akaizer (live timestretch play mode)
+    // per-voice overrides from FX commands, 0 = use the instrument setting
+    void setAkaizerStretchOverride(uint16_t percent);
+    void setAkaizerCycleOverride(uint16_t samples);
+    void clearAkaizerOverrides();
+
     //************Granular
     void setGranularPosForceFlag();
     void clearGranularPosForceFlag();
@@ -239,6 +245,7 @@ class AudioPlayMemory : public AudioStream
     void playSlice(uint8_t instrIdx, int8_t note);
     void playBeatSlice(uint8_t instrIdx, int8_t note);
     void playGranular(uint8_t instrIdx, int8_t note);
+    void playAkaizer(uint8_t instrIdx, int8_t note);
     void playWavetable(uint8_t instrIdx, int8_t note);
     // UPDATE OBSLUGA OGÓLNA
 
@@ -250,6 +257,8 @@ class AudioPlayMemory : public AudioStream
     audio_block_t* updateSlice();
     audio_block_t* updateBeatSlice();
     audio_block_t* updateGranular();
+    audio_block_t* updateAkaizer();
+    void refreshAkaizerParams();
     audio_block_t* updateWavetable();
 
     // singleShot
@@ -436,6 +445,30 @@ class AudioPlayMemory : public AudioStream
     uint32_t waveTablePosition;
 
     //********
+    //********** Akaizer
+    static constexpr int kAkaizerMaxGrains = 8;
+    struct AkaizerGrain
+    {
+        uint64_t pos; // source position, Q32.32 frames from the start point
+        uint32_t j;   // sample index inside the grain
+        uint32_t len; // grain length (2 x cycle length)
+        bool active;
+    };
+    AkaizerGrain akaizerGrain[kAkaizerMaxGrains];
+    uint64_t akaizerNextSrc = 0;        // next grain's source start, Q32.32
+    uint64_t akaizerSrcHop = 0;         // source distance between grains, Q32.32
+    uint32_t akaizerOutPos = 0;         // output frames since the note started
+    uint32_t akaizerNextOut = 0;        // output frame of the next grain
+    uint32_t akaizerOutHop = 0;         // output frames between grains (C)
+    uint32_t akaizerGrainLen = 0;       // 2 x cycle length
+    uint32_t akaizerRegion = 0;         // playable frames (start to end point)
+    uint32_t akaizerOutTotal = 0;       // output length, as the original works it out
+    int32_t akaizerGrainCount = 0;      // grains laid down so far (k)
+    int32_t akaizerGrainMax = 0;        // last grain index (kMax)
+    bool akaizerScheduling = false;     // still laying down new grains
+    uint16_t akaizerStretchOverride = 0;
+    uint16_t akaizerCycleOverride = 0;
+
     //********** Granular
     uint8_t granularLoopType;
     uint16_t currentGranularPosition;

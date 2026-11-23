@@ -389,7 +389,10 @@ void cSamplePlayback::setAutoSlicePopupFunct()
 
 void cSamplePlayback::processPoints()
 {
-    points.pointsType = editorInstrument->playMode;
+    // Akaizer has no loop points: draw only start and end, like 1-Shot
+    points.pointsType = (editorInstrument->playMode == playModeAkaizer)
+                          ? (uint8_t)playModeSingleShot
+                          : editorInstrument->playMode;
 
     if (editorInstrument->startPoint >= zoom.zoomStart &&
         editorInstrument->startPoint <= zoom.zoomEnd)
@@ -856,6 +859,23 @@ static void functButton2(uint8_t state)
     {
         return;
     }
+    else if (SP->editorInstrument->playMode == playModeAkaizer)
+    {
+        if (state == buttonPress || state == UINT8_MAX)
+        {
+            // pressing the selected F3 again switches Stretch <-> Loop BPM
+            if (state == buttonPress && SP->selectedPlace == 2)
+            {
+                SP->akaizerShowLoopBpm = !SP->akaizerShowLoopBpm;
+                SP->showAkaizerStretchValue();
+            }
+            SP->points.selected = 0;
+            SP->selectedPlace = 2;
+            SP->refreshPoints = 1;
+            SP->activateLabelsBorder();
+        }
+        return;
+    }
     else
     {
         if (state == UINT8_MAX || state == buttonPress)
@@ -958,6 +978,23 @@ static void functButton3(uint8_t state)
     }
     else if (SP->editorInstrument->playMode == playModeSingleShot)
     {
+        return;
+    }
+    else if (SP->editorInstrument->playMode == playModeAkaizer)
+    {
+        if (state == buttonPress || state == UINT8_MAX)
+        {
+            // pressing the selected F4 again switches Cycle Len <-> Cycle Freq
+            if (state == buttonPress && SP->selectedPlace == 3)
+            {
+                SP->akaizerShowCycleFreq = !SP->akaizerShowCycleFreq;
+                SP->showAkaizerCycleValue();
+            }
+            SP->points.selected = 0;
+            SP->selectedPlace = 3;
+            SP->refreshPoints = 1;
+            SP->activateLabelsBorder();
+        }
         return;
     }
     else
@@ -1792,6 +1829,8 @@ static void changePlayModeSelection(int16_t value)
 
     value = clamp<int>(value, -4, 4);
     uint8_t prevPlayMode = SP->editorInstrument->playMode;
+    SP->akaizerShowLoopBpm = false;
+    SP->akaizerShowCycleFreq = false;
 
     if (SP->editorInstrument->playMode + value < 0)
         SP->editorInstrument->playMode = 0;
@@ -1814,6 +1853,12 @@ static void changePlayModeSelection(int16_t value)
              mtProject.sampleMemory[mtProject.values.lastUsedInstrument].isStreamed)
     {
         voiceStreamManager.refreshInstrumentSliceCache(mtProject.values.lastUsedInstrument);
+    }
+
+    if (SP->editorInstrument->playMode == playModeGranular)
+    {
+        // the granular fields may hold Akaizer settings
+        akaizerSettings::clearForGranular(*SP->editorInstrument);
     }
 
     if (SP->editorInstrument->playMode == playModeWavetable)
@@ -2066,6 +2111,12 @@ static void modEndPoint(int16_t value)
 
 static void modLoopPoint1(int16_t value)
 {
+    if (SP->editorInstrument->playMode == playModeAkaizer)
+    {
+        SP->modAkaizer(2, value);
+        return;
+    }
+
     uint16_t move_step = SP->zoom.zoomWidth / 600;
     value = value * move_step;
 
@@ -2102,6 +2153,12 @@ static void modLoopPoint1(int16_t value)
 
 static void modLoopPoint2(int16_t value)
 {
+    if (SP->editorInstrument->playMode == playModeAkaizer)
+    {
+        SP->modAkaizer(3, value);
+        return;
+    }
+
     uint16_t move_step = SP->zoom.zoomWidth / 600;
     value = value * move_step;
 
@@ -2758,6 +2815,12 @@ void cSamplePlayback::setDefaultStartPoint()
 
 void cSamplePlayback::setDefaultLoopPoint1()
 {
+    if (SP->editorInstrument->playMode == playModeAkaizer)
+    {
+        setDefaultAkaizer(2);
+        return;
+    }
+
     SP->editorInstrument->loopPoint1 = defaultInstrumentParams.loopPoint1;
 
     if (SP->editorInstrument->loopPoint1 <= SP->editorInstrument->startPoint)
@@ -2786,6 +2849,12 @@ void cSamplePlayback::setDefaultLoopPoint1()
 
 void cSamplePlayback::setDefaultLoopPoint2()
 {
+    if (SP->editorInstrument->playMode == playModeAkaizer)
+    {
+        setDefaultAkaizer(3);
+        return;
+    }
+
     SP->editorInstrument->loopPoint2 = defaultInstrumentParams.loopPoint2;
 
     if (SP->editorInstrument->loopPoint2 >= SP->editorInstrument->endPoint)
@@ -3422,4 +3491,109 @@ static void functMenu(uint8_t state)
     {
         mtMenuPopup.hideModulePopup(SP);
     }
+}
+
+//======================================================================================================================
+// Akaizer play mode settings
+//======================================================================================================================
+
+void cSamplePlayback::modAkaizer(uint8_t place, int16_t value)
+{
+    strInstrument& in = *editorInstrument;
+    uint16_t stretch = akaizerSettings::stretchPercent(in);
+    uint16_t bpm = akaizerSettings::loopBpm(in);
+    uint16_t cycle = akaizerSettings::cycleLength(in);
+    uint16_t freq = akaizerSettings::cycleFrequency(in);
+
+    if (place == 2 && !akaizerShowLoopBpm)
+    {
+        // turning Stretch takes it off tempo sync
+        if (bpm != 0)
+        {
+            stretch = (uint16_t)(100.0f * (float)bpm / mtProject.values.globalTempo + 0.5f);
+            bpm = 0;
+        }
+        stretch = (uint16_t)clamp<int>((int)stretch + value,
+                                       akaizerSettings::kMinStretch,
+                                       akaizerSettings::kMaxStretch);
+    }
+    else if (place == 2)
+    {
+        // Loop BPM: 0 = off, then 40..300
+        int v = (int)bpm + value;
+        if (bpm == 0 && value > 0)
+        {
+            v = akaizerSettings::kMinBpm + value - 1;
+        }
+        else if (v < akaizerSettings::kMinBpm)
+        {
+            v = 0;
+        }
+        bpm = (uint16_t)clamp<int>(v, 0, akaizerSettings::kMaxBpm);
+    }
+    else if (place == 3 && !akaizerShowCycleFreq)
+    {
+        cycle = (uint16_t)clamp<int>((int)cycle + value,
+                                     akaizerSettings::kMinCycle,
+                                     akaizerSettings::kMaxCycle);
+    }
+    else if (place == 3)
+    {
+        // Cycle Freq: 0 = Auto (linked), then 20..2050
+        int v = (int)freq + value;
+        if (freq == 0 && value > 0)
+        {
+            v = akaizerSettings::kMinFreq + value - 1;
+        }
+        else if (v < akaizerSettings::kMinFreq)
+        {
+            v = 0;
+        }
+        freq = (uint16_t)clamp<int>(v, 0, akaizerSettings::kMaxFreq);
+    }
+
+    akaizerSettings::set(in, stretch, bpm, cycle, freq);
+    newFileManager.setInstrumentStructChanged(mtProject.values.lastUsedInstrument);
+
+    showAkaizerStretchValue();
+    showAkaizerCycleValue();
+}
+
+void cSamplePlayback::setDefaultAkaizer(uint8_t place)
+{
+    strInstrument& in = *editorInstrument;
+    uint16_t stretch = akaizerSettings::stretchPercent(in);
+    uint16_t bpm = akaizerSettings::loopBpm(in);
+    uint16_t cycle = akaizerSettings::cycleLength(in);
+    uint16_t freq = akaizerSettings::cycleFrequency(in);
+
+    if (place == 2)
+    {
+        if (akaizerShowLoopBpm)
+        {
+            bpm = 0;
+        }
+        else
+        {
+            stretch = akaizerSettings::kDefaultStretch;
+            bpm = 0;
+        }
+    }
+    else if (place == 3)
+    {
+        if (akaizerShowCycleFreq)
+        {
+            freq = 0;
+        }
+        else
+        {
+            cycle = akaizerSettings::kDefaultCycle;
+        }
+    }
+
+    akaizerSettings::set(in, stretch, bpm, cycle, freq);
+    newFileManager.setInstrumentStructChanged(mtProject.values.lastUsedInstrument);
+
+    showAkaizerStretchValue();
+    showAkaizerCycleValue();
 }

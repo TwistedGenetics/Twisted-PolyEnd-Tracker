@@ -178,7 +178,9 @@ class Sequencer
             FX_TYPE_R1,
             FX_TYPE_GRANULAR_LENGTH = FX_TYPE_R1,
             FX_TYPE_R2,
+            FX_TYPE_AKAIZER_STRETCH = FX_TYPE_R2, // Twisted: stock firmware ignores R2/R3
             FX_TYPE_R3,
+            FX_TYPE_AKAIZER_CYCLE = FX_TYPE_R3,
             FX_TYPE_R7,
             FX_TYPE_R8,
             FX_TYPE_R9,

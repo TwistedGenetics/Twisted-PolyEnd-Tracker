@@ -1781,6 +1781,8 @@ AUDIO_CORE_RAM int16_t Sequencer::getFxMax(uint8_t fxID, bool forRandom)
 
         case fx.FX_TYPE_BIT_DEPTH: return BIT_DEPTH_MAX;
         case fx.FX_TYPE_TUNE: return 48;
+        case fx.FX_TYPE_AKAIZER_STRETCH: return 255;
+        case fx.FX_TYPE_AKAIZER_CYCLE: return 200;
         case fx.FX_TYPE_SLIDE_UP:
         case fx.FX_TYPE_SLIDE_DOWN:
         case fx.FX_TYPE_AMP_ENV:
@@ -1806,6 +1808,8 @@ AUDIO_CORE_RAM int16_t Sequencer::getFxMin(uint8_t fxID, bool forRandom)
         case fx.FX_TYPE_MIDI_CHORD: return MIN_CHORD;
 
         case fx.FX_TYPE_BIT_DEPTH: return BIT_DEPTH_MIN;
+        case fx.FX_TYPE_AKAIZER_STRETCH: return 25;
+        case fx.FX_TYPE_AKAIZER_CYCLE: return 2;
         default: return 0;
     }
 }
@@ -1821,6 +1825,8 @@ int16_t Sequencer::getFxDefault(uint8_t fxID)
         case fx.FX_TYPE_PANNING: return 50;
         case fx.FX_TYPE_MICROTUNING: return 99;
         case fx.FX_TYPE_MIDI_CHORD: return MIN_CHORD;
+        case fx.FX_TYPE_AKAIZER_STRETCH: return 100;
+        case fx.FX_TYPE_AKAIZER_CYCLE: return 80;
 
         default: return 0;
     }
