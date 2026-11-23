@@ -202,7 +202,7 @@
     <b>Firmware:</b> Twisted PolyEnd Tracker, based on Polyend Tracker Community Edition 1.0.0<br>
     <b>For:</b> Tracker+ (the original Tracker builds too; the Tracker Mini has no song tools)<br>
     <b>Repository:</b> github.com/TwistedGenetics/Twisted-PolyEnd-Tracker<br>
-    <b>Manual version:</b> 2.3 · November 2026
+    <b>Manual version:</b> 2.4 · November 2026
   </div>
 </div>
 
@@ -249,6 +249,7 @@
     <tr><td><b>Faster sample browser</b></td><td>Folders open much faster, and a folder of up to 499 samples is shown as one list instead of being split into groups of 99.</td></tr>
     <tr><td><b>REESE synth</b></td><td>The Reese bass engine from DREADNOUGHT as a Tracker+ synth, with its 10 sounds: classic jungle, OG, techstep, neuro and more.</td></tr>
     <tr><td><b>CRAFTY synth</b></td><td>Crafty Synth, the CRAFTsynth 2.0-style wavetable synth from the FM-1, with its 64 presets, wavetables, modifiers, filters, mod matrix, arp and effects.</td></tr>
+    <tr><td><b>Random Patch</b></td><td>A new random sound on any synth model, one button press each (patch editor, the <b>Random Patch</b> button).</td></tr>
     <tr><td><b>SUB, JUNO, DX7</b></td><td>Three more engines from DREADNOUGHT: an SH-101-style jungle bass, a Juno-60/106-style polysynth with its chorus, and a six-operator DX7 that loads your DX7 banks from the SD card.</td></tr>
     <tr><td><b>Graffiti start screen</b></td><td>The Tracker+ starts up with the Twisted Tracker graffiti logo.</td></tr>
     <tr><td><b>Crop to New</b></td><td>In the Sample Editor, copy the part between Start and End into a new instrument, leaving the original untouched.</td></tr>
@@ -804,6 +805,15 @@
   <h2>16 · SUB, JUNO and DX7 synths</h2>
   <p>Three more of DREADNOUGHT's engines are now Tracker+ synths. Pick them as the model on a SYN slot, like REESE and CRAFTY. SUB and JUNO work like REESE: <b>Preset</b> picks a sound and every other knob moves it (switches start on <b>Preset (…)</b>).</p>
 
+  <h3>Random Patch (every synth model)</h3>
+  <p>In the synth patch editor, press <b>Random Patch</b> (the fourth button, next to Init Patch). Every press makes a new sound; press <b>Save</b> or <b>Save As</b> to keep one you like.</p>
+  <ul>
+    <li><b>REESE, CRAFTY, SUB, JUNO and DX7:</b> a random preset (DX7: a random voice; empty slots are skipped), then the knobs nudged either side of it and about a third of the switches changed. The results stay playable.</li>
+    <li><b>The other models</b> (ACD, FAT, VAP, WTFM, PERC, DIRT, CHIP): every parameter random over its range, with attack, decay and release leaning short.</li>
+    <li>Volume, gain, tuning, octave, transpose, tempo, arp, glide, pan and voice settings are left as they are, so a random patch stays in key and at the same level.</li>
+    <li>Macros aren't changed.</li>
+  </ul>
+
   <h3>SUB: SH-101-style jungle bass (mono)</h3>
   <p>One oscillator with saw, pulse (with PWM), a sub an octave or two down and noise, into a resonant 4-pole filter that self-oscillates in tune. Then the jungle part: <b>Drive</b> (Soft, Hard, Fold, Rect), <b>Crush</b>, <b>Tone</b>, and the <b>Clean Sub Split</b>, which keeps everything below the split frequency clean however hard you drive the rest.</p>
   <ul>
@@ -906,6 +916,7 @@
     <tr><td>Colour blocks</td><td>Select blocks, <kbd>Insert</kbd>, <kbd>F7</kbd>, pick <kbd>F1</kbd>–<kbd>F8</kbd></td></tr>
     <tr><td>Remove colour</td><td>Select blocks, <kbd>Insert</kbd>, <kbd>F7</kbd>, <kbd>Delete</kbd></td></tr>
     <tr><td>Colour a track in the pattern editor</td><td><kbd>F8</kbd> (More) to the Name page, <kbd>F3</kbd>, pick <kbd>F1</kbd>–<kbd>F8</kbd></td></tr>
+    <tr><td>Random synth patch</td><td>Synth patch editor, <b>Random Patch</b> (press again for another)</td></tr>
     <tr><td>SH-101 bass / Juno / DX7</td><td>Instrument screen, a SYN slot, model <b>SUB</b>, <b>JUNO</b> or <b>DX7</b></td></tr>
     <tr><td>Load DX7 banks</td><td>Copy <code>.syx</code> banks to <code>/DX7</code> on the SD card, then choose DX7</td></tr>
     <tr><td>Play Crafty Synth</td><td>Instrument screen, a SYN slot, model <b>CRAFTY</b>, turn Preset</td></tr>

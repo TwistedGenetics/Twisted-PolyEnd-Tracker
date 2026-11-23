@@ -49,6 +49,15 @@ static void functSynthSave();
 static void functSynthSaveAs();
 static void functSynthBack();
 static void functSynthInit();
+static void functSynthRandom();
+static void functSynthRandom() // Twisted: a new random patch every press
+{
+    if (IE->keyboardManager.getState())
+        return;
+    IE->randomizeCurrentPatch();
+    IE->showSynthPatchEditorScreen();
+}
+
 static void functSynthInitConfirm();
 static void functSynthInitCancel();
 
@@ -128,6 +137,7 @@ void cInstrumentEditor::setSynthPatchEditorScreenFunct()
     ip->setButtonObj(interfaceButton0, buttonPress, functSynthSave);
     ip->setButtonObj(interfaceButton1, buttonPress, functSynthSaveAs);
     ip->setButtonObj(interfaceButton2, buttonPress, functSynthInit);
+    ip->setButtonObj(interfaceButton3, buttonPress, functSynthRandom);
     ip->setButtonObj(interfaceButton7, buttonPress, functSynthBack);
 
     ip->setPotObj(interfacePot0, functSynthPatchEditEncoder);
@@ -984,13 +994,14 @@ void cInstrumentEditor::showSynthPatchEditorScreen()
     display.setRemoveControlStyle(label[6], controlStyleBackground);
     display.setRemoveControlStyle(label[7], controlStyleBackground);
     display.setControlValue(label[2], 1);
+    display.setControlValue(label[3], 1);
 
     display.setControlColors(modelListControl, display.getTheme().activeListColors);
 
     display.setControlText(label[0], "Save");
     display.setControlText(label[1], "Save As");
     display.setControlText(label[2], "Init");
-    display.setControlText(label[3], "");
+    display.setControlText(label[3], "Random");
     display.setControlText(label[4], "");
     display.setControlText(label[5], "Parameter");
     display.setControlText(label[6], "");
@@ -999,7 +1010,7 @@ void cInstrumentEditor::showSynthPatchEditorScreen()
     display.setControlText2(label[0], "");
     display.setControlText2(label[1], "");
     display.setControlText2(label[2], "Patch");
-    display.setControlText2(label[3], "");
+    display.setControlText2(label[3], "Patch");
     display.setControlText2(label[4], "");
     display.setControlText2(label[5], "");
     display.setControlText2(label[6], "");

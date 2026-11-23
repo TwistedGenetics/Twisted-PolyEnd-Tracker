@@ -11,6 +11,15 @@
 #include "mtAudioEngine.h"
 #include "util_math.h"
 #include "util_string.h"
+#include "Platform.h"
+#include "Tracker.h"
+
+#include <algorithm>
+#include <cctype>
+#include <cmath>
+#include <cstring>
+#include <string>
+#include <vector>
 
 extern uint8_t externalRamScratchBuff[];
 static_assert(kMaxFilesListLength * (kMaxFileNameLen + 1) + kMaxFilesListLength * sizeof(char**) <=
@@ -753,6 +762,162 @@ void cInstrumentEditor::initCurrentPatch()
     mtPopups.show(0, "Init patch loaded");
 
     IE->showSynthPatchName(syntPartIdx);
+}
+
+// Twisted: Random Patch. Works on every synth model from its parameter list:
+//  - engines built on a preset (REESE, CRAFTY, SUB, JUNO, DX7): a random preset/voice (never an empty slot), then
+//    the knobs pushed a little either side of it and about a third of the switches changed, so it stays playable;
+//  - the other models: every parameter random over its range, envelope times leaning short;
+//  - level, tuning, tempo, arp, glide and voice-count parameters are left alone (the sound changes, not the mix).
+namespace
+{
+uint32_t twRandState = 0;
+
+uint32_t twRand()
+{
+    if (twRandState == 0)
+        twRandState = Tracker::getInstance()->getPlatform()->getTimer()->micros() | 1u;
+    twRandState ^= twRandState << 13; // xorshift32
+    twRandState ^= twRandState >> 17;
+    twRandState ^= twRandState << 5;
+    return twRandState;
+}
+
+float twRand01() { return static_cast<float>(twRand() >> 8) * (1.0f / 16777216.0f); }
+
+std::string twLower(const std::string& s)
+{
+    std::string r = s;
+    for (auto& c : r)
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return r;
+}
+
+bool twStartsWithWord(const std::string& name, const char* word)
+{
+    const size_t n = std::strlen(word);
+    return name.compare(0, n, word) == 0 && (name.size() == n || name[n] == ' ' || name[n] == '(');
+}
+
+bool twKeepAsIs(const std::string& lowerName)
+{
+    static const char* const kKeep[] = { "volume", "vol", "gain", "master", "level out", "tune", "fine", "octave",
+                                         "transpose", "tempo", "arp", "arp rate", "glide", "porta", "portamento",
+                                         "voices", "polyphony", "play mode", "bend", "pitch bend", "pan" };
+    for (const char* k : kKeep)
+        if (twStartsWithWord(lowerName, k))
+            return true;
+    return false;
+}
+
+bool twIsEnvTime(const std::string& lowerName)
+{
+    return lowerName.find("attack") != std::string::npos || lowerName.find("decay") != std::string::npos ||
+           lowerName.find("release") != std::string::npos;
+}
+} // namespace
+
+void cInstrumentEditor::randomizeCurrentPatch()
+{
+    int syntPartIdx = mtProject.values.lastUsedInstrument - SYNTH_INSTRUMENTS_START_IDX;
+    if (syntPartIdx < 0 || syntPartIdx >= kSynthInstrumentsCount)
+        return;
+
+    auto& patch = getSynth()->getPatch(syntPartIdx);
+    const auto& metadata = patch.getMetadata();
+    const int count = static_cast<int>(metadata.params.size());
+
+    // a preset-based engine: its first named parameter is "Preset" (or the DX7's "Voice") and a list
+    int presetParam = -1;
+    for (int i = 0; i < count; i++)
+    {
+        const auto& p = metadata.params[i];
+        if (p.displayName.empty())
+            continue;
+        const std::string n = twLower(p.displayName);
+        if (p.isEnum && (n == "preset" || n == "voice"))
+            presetParam = i;
+        break;
+    }
+
+    // choose every value first (the names and value texts are read here, not with the audio stopped)
+    std::vector<std::pair<int, float>> values;
+    values.reserve(count);
+    for (int i = 0; i < count; i++)
+    {
+        const auto& p = metadata.params[i];
+        if (p.displayName.empty() || p.maxValue <= p.minValue)
+            continue;
+        const std::string name = twLower(p.displayName);
+        const float lo = static_cast<float>(p.minValue), hi = static_cast<float>(p.maxValue);
+        float v;
+
+        if (i == presetParam)
+        {
+            const int n = p.maxValue - p.minValue + 1;
+            int pick = p.minValue;
+            for (int tries = 0; tries < 24; tries++) // never an empty user slot or bank voice
+            {
+                pick = p.minValue + static_cast<int>(twRand() % static_cast<uint32_t>(n));
+                if (!p.valueFormatter)
+                    break;
+                const std::string t = twLower(p.valueFormatter(patch, static_cast<float>(pick)));
+                if (t.find("empty") == std::string::npos)
+                    break;
+                pick = p.minValue;
+            }
+            v = static_cast<float>(pick);
+        }
+        else if (twKeepAsIs(name))
+        {
+            continue;
+        }
+        else if (presetParam >= 0)
+        {
+            if (p.isEnum) // 0 = the preset's own choice
+            {
+                if (twRand01() > 0.33f)
+                    v = 0.0f;
+                else
+                    v = static_cast<float>(1 + static_cast<int>(twRand() % static_cast<uint32_t>(p.maxValue)));
+            }
+            else // an offset from the preset: mostly small, now and then bigger
+            {
+                const float r = twRand01() * 2.0f - 1.0f;
+                const float span = (twRand01() < 0.2f ? 0.6f : 0.25f) * hi;
+                v = std::round(r * span);
+            }
+        }
+        else if (p.isEnum)
+        {
+            v = static_cast<float>(p.minValue +
+                                   static_cast<int>(twRand() % static_cast<uint32_t>(p.maxValue - p.minValue + 1)));
+        }
+        else
+        {
+            float r = twRand01();
+            if (twIsEnvTime(name))
+                r = r * r; // lean short so most patches speak
+            v = lo + (hi - lo) * r;
+        }
+        values.emplace_back(i, std::clamp(v, lo, hi));
+    }
+
+    // the preset first, so the engines' other values are offsets from the new preset
+    DISABLE_AUDIO_INTERRUPTS();
+    patch.startBatchUpdate();
+    for (const auto& [id, v] : values)
+        if (id == presetParam)
+            patch.setParamValue(id, v, polysynth::Patch::ParamChangeSource::kKnob);
+    for (const auto& [id, v] : values)
+        if (id != presetParam)
+            patch.setParamValue(id, v, polysynth::Patch::ParamChangeSource::kKnob);
+    patch.finishBatchUpdate();
+    ENABLE_AUDIO_INTERRUPTS();
+
+    getSynth()->setPatchDirty(syntPartIdx);
+    newFileManager.setProjectStructChanged();
+    mtPopups.show(0, "Random patch");
 }
 
 // ------------------------------------------------------------------------------------------
