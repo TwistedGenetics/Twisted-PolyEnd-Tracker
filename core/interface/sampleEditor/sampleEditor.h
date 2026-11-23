@@ -17,7 +17,8 @@ char* const effectNamesLabels[editorEffectMax] = {
     (char*)"Limiter",          (char*)"Compressor",
     (char*)"WT Smoother",      (char*)"Timestretch Beat",
     (char*)"Timestretch Note", (char*)"Fade In",
-    (char*)"Fade Out",         (char*)"Modular"
+    (char*)"Fade Out",         (char*)"Akaizer",
+    (char*)"Modular"
 };
 
 struct strEffectDisplayParams
@@ -151,6 +152,14 @@ const strEffectDisplayConstantParams effectDisplayConstantParams[editorEffectMax
       timestretchNoteParams::displayType },
     {}, // fade in  -  brak drugiego ekranu
     {}, // fade out - brak drugiego ekranu
+    { 5,
+      akaizerParams::labelText,
+      akaizerParams::upConstrain,
+      akaizerParams::downConstrain,
+      akaizerParams::changeStep,
+      akaizerParams::displayMult,
+      akaizerParams::afterValueText,
+      akaizerParams::displayType },
     {}  // modular - dynamiczne parametry
 };
 
@@ -172,6 +181,7 @@ const strEffectDefaultParams effectDefaultParamsTable[editorEffectMax] = {
     { { 0.0f, 100.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } },      // timestretch note
     {}, // fade in - brak drugiego ekranu
     {}, // fade out - brak drugiego ekranu
+    { { 100.0f, 800.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f } }, // akaizer
     {}  // modular
 };
 

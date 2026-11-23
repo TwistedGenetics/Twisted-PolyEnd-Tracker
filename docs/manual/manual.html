@@ -196,13 +196,13 @@
   <div>
     <div class="kicker">Twisted PolyEnd Tracker · Firmware Manual</div>
     <h1>Twisted<br><span>Song Mode</span></h1>
-    <p class="sub">Named sections, live section looping, selection loops, clone in place, linked pattern variations and colour-coded blocks for the Polyend Tracker+.</p>
+    <p class="sub">Named sections, live section looping, selection loops, clone in place, linked pattern variations, colour-coded blocks, pattern naming, and the Akaizer timestretch in the Sample Editor, for the Polyend Tracker+.</p>
   </div>
   <div class="meta">
     <b>Firmware:</b> Twisted PolyEnd Tracker, based on Polyend Tracker Community Edition 1.0.0<br>
     <b>For:</b> Tracker+ (the original Tracker builds too; the Tracker Mini has no song tools)<br>
     <b>Repository:</b> github.com/TwistedGenetics/Twisted-PolyEnd-Tracker<br>
-    <b>Manual version:</b> 1.1 · November 2026
+    <b>Manual version:</b> 1.2 · November 2026
   </div>
 </div>
 
@@ -219,9 +219,10 @@
     <li><span class="n">7</span> Clone in place</li>
     <li><span class="n">8</span> Linked variations</li>
     <li><span class="n">9</span> Block colours</li>
-    <li><span class="n">10</span> Projects, saving and compatibility</li>
-    <li><span class="n">11</span> Messages and troubleshooting</li>
-    <li><span class="n">12</span> Quick reference</li>
+    <li><span class="n">10</span> Akaizer timestretch (Sample Editor)</li>
+    <li><span class="n">11</span> Projects, saving and compatibility</li>
+    <li><span class="n">12</span> Messages and troubleshooting</li>
+    <li><span class="n">13</span> Quick reference</li>
   </ol>
 </section>
 
@@ -236,6 +237,8 @@
     <tr><td><b>Loop Selection</b></td><td>Loop any run of slots you highlight.</td></tr>
     <tr><td><b>Clone In Place</b></td><td>Give one slot its own copy of a pattern, so you can change it without changing every other place the pattern is used.</td></tr>
     <tr><td><b>Linked variations</b></td><td>A copy that keeps following the original on every track you haven't changed.</td></tr>
+    <tr><td><b>Pattern names</b></td><td>Name a pattern from the song view. It's the same name the pattern editor shows, so a name set in either place shows in both.</td></tr>
+    <tr><td><b>Akaizer</b></td><td>The classic Akaizer timestretch as a Sample Editor effect, the same engine as Twisted Timestretch.</td></tr>
     <tr><td><b>Block colours</b></td><td>Colour-code the blocks in the song view with 8 colours (drums blue, bass red…). Colours move with blocks you copy.</td></tr>
   </table>
   <div class="note"><b>Your projects stay safe</b>Sections, variation links and block colours are kept in a separate file inside the project. Stock Polyend firmware ignores that file, so it still opens your projects. It just won't show the sections or colours, or keep variations linked.</div>
@@ -290,7 +293,7 @@
     </div>
     <div class="labels">
       <div>Section<small>Name</small></div>
-      <div>Section<small>Remove</small></div>
+      <div>Pattern<small>Name</small></div>
       <div>Loop<small>Section ON</small></div>
       <div>Loop<small>Selection</small></div>
       <div>Clone<small>In Place</small></div>
@@ -304,7 +307,8 @@
   <table>
     <tr><th>Key</th><th>Tool</th><th>Needs REC</th></tr>
     <tr><td class="key">F1</td><td><b>Section Name.</b> Start a section at the selected slot, or rename the one that starts there.</td><td class="yes">Yes</td></tr>
-    <tr><td class="key">F2</td><td><b>Section Remove.</b> Remove the divider of the section the selected slot is in.</td><td class="yes">Yes</td></tr>
+    <tr><td class="key">F2</td><td><b>Pattern Name.</b> Name the selected slot's pattern (see below).</td><td>No</td></tr>
+    <tr><td class="key">Shift+F1</td><td><b>Section Remove.</b> Remove the divider of the section the selected slot is in. Holding <kbd>Shift</kbd> changes the F1 label to "Remove".</td><td class="yes">Yes</td></tr>
     <tr><td class="key">F3</td><td><b>Loop Section.</b> Loop the selected slot's section. Press again to stop.</td><td>No</td></tr>
     <tr><td class="key">F4</td><td><b>Loop Selection.</b> Loop the highlighted slots. Press again to stop.</td><td>No</td></tr>
     <tr><td class="key">F5</td><td><b>Clone In Place.</b> Give this slot its own copy of the pattern.</td><td class="yes">Yes</td></tr>
@@ -317,6 +321,14 @@
     <li>The arrows, encoder, <kbd>Play</kbd>, <kbd>Rec</kbd> and <kbd>Shift</kbd> work as usual while the tools are showing.</li>
     <li><kbd>Shift</kbd> + <kbd>Insert</kbd> still jumps to the top of the song.</li>
     <li>The Tracker remembers that the tools page was open when you leave the Song screen and come back.</li>
+  </ul>
+
+  <h3>Naming patterns</h3>
+  <p>Select a slot and press <kbd>F2</kbd> (Pattern Name). Type the name with the pads, exactly as for a section, and press <kbd>F8</kbd> (Save). This doesn't need REC.</p>
+  <ul>
+    <li>It's the pattern's own name, the same one the pattern editor uses. Every slot that plays the pattern shows the new name.</li>
+    <li>You can still name a pattern in the pattern editor: press <kbd>F8</kbd> (More) until the buttons show <b>Pattern Name</b>, then press <kbd>F1</kbd>. The song view shows that name too.</li>
+    <li>Up to 30 characters. Saving an empty name clears it.</li>
   </ul>
 </section>
 
@@ -353,7 +365,7 @@
   <h3>Renaming and removing</h3>
   <ul>
     <li>To rename a section, select its first slot and press <kbd>F1</kbd> again. The current name is filled in for you.</li>
-    <li>To remove a section, select any slot in it and press <kbd>F2</kbd>. The slots stay; they join the section above.</li>
+    <li>To remove a section, select any slot in it and press <kbd>Shift</kbd> + <kbd>F1</kbd>. The slots stay; they join the section above.</li>
     <li>Saving an empty name also removes the section.</li>
   </ul>
 
@@ -519,9 +531,40 @@
   <div class="note"><b>Tip</b>Pick a scheme and stick to it in every project, for example blue drums, red bass, orange breaks, purple pads, yellow FX, green leads. A long song then reads like a map.</div>
 </section>
 
+<!-- ============================================================ akaizer -->
+<section>
+  <h2>10 · Akaizer timestretch (Sample Editor)</h2>
+  <p><b>Akaizer</b> is the timestretch behind a generation of jungle and drum &amp; bass breaks: the same engine as Twisted Timestretch, a line-for-line port of Akaizer v1.2. On the Tracker it's an effect in the Sample Editor, next to the built-in timestretches.</p>
+
+  <h3>Use it</h3>
+  <ol class="steps">
+    <li>Open the <b>Sample Editor</b> on the instrument.</li>
+    <li>Select the part to stretch, or leave the whole sample selected.</li>
+    <li>Choose <b>Akaizer</b> in the effect list (after Fade Out, before any plugin effects).</li>
+    <li>Set the five settings below with the encoder.</li>
+    <li>Press <b>Preview</b> to hear it, then <b>Apply</b> to keep it. Undo works as with any effect.</li>
+  </ol>
+
+  <h3>Settings</h3>
+  <table>
+    <tr><th>Setting</th><th>Range</th><th>What it does</th></tr>
+    <tr><td><b>Stretch</b></td><td style="white-space:nowrap">25 – 2000 %</td><td>The new length as a percentage of the original. 200 % doubles the length at the same pitch.</td></tr>
+    <tr><td><b>Cycle Len</b></td><td style="white-space:nowrap">20 – 2000 smp</td><td>Grain size: each grain is twice this long. Short cycles sound grainy and metallic, long ones smoother and more echoey.</td></tr>
+    <tr><td><b>Cycle Freq</b></td><td style="white-space:nowrap">Auto,<br>20 – 2050 cps</td><td>How often grains are laid down. <b>Auto</b> links it to the cycle length (41000 ÷ Cycle Len), as the original does until you set it by hand. Turn below 20 to get back to Auto.</td></tr>
+    <tr><td><b>Pitch</b></td><td style="white-space:nowrap">−24 – +24 st</td><td>Sampler-style repitch before the stretch. The final length stays at Stretch, so "pitch up, stretch back to length" is one move.</td></tr>
+    <tr><td><b>Loop BPM</b></td><td style="white-space:nowrap">Off,<br>40 – 300</td><td>The tempo the loop is at now. When set, the loop is stretched to the <b>project tempo</b> and the Stretch setting is ignored. A 136 BPM break with the project at 170 BPM comes out 80 % long.</td></tr>
+  </table>
+  <ul>
+    <li>Audio outside the selection is kept; only the selection changes length.</li>
+    <li>Stereo samples are processed the way the original processes stereo files, quirks included. Mono samples stay mono.</li>
+    <li>The result can be up to about 44 seconds. Anything longer shows <i>Stretched sample is too long!</i></li>
+  </ul>
+  <div class="note"><b>Faithful to the original</b>The engine was checked sample for sample against Twisted Timestretch's reference renders of Akaizer, and against its pitch engine. Same settings, same sound.</div>
+</section>
+
 <!-- ============================================================ 10 -->
 <section>
-  <h2>10 · Projects, saving and compatibility</h2>
+  <h2>11 · Projects, saving and compatibility</h2>
   <ul>
     <li>Sections, variation links and block colours are saved in the file <code>patterns/twistedSong</code> inside each project, next to the pattern files.</li>
     <li>They're saved and opened with the project as usual. You don't need to do anything extra.</li>
@@ -539,7 +582,7 @@
 
 <!-- ============================================================ 10 -->
 <section>
-  <h2>11 · Messages and troubleshooting</h2>
+  <h2>12 · Messages and troubleshooting</h2>
   <table>
     <tr><th>Message or problem</th><th>Meaning / what to do</th></tr>
     <tr><td><b>Press REC to edit the song</b></td><td>That tool changes the song. Turn on edit mode with <kbd>Rec</kbd> first.</td></tr>
@@ -550,6 +593,8 @@
     <tr><td>The loop stopped by itself</td><td>You added or deleted a slot. Turn the loop on again.</td></tr>
     <tr><td>The selection won't move while playing</td><td>Live selection only works with Loop Section on, or with REC on.</td></tr>
     <tr><td>A variation didn't update</td><td>The original hasn't been saved yet. Switch pattern or screen, then check again. If you changed that track in the variation, it no longer follows by design.</td></tr>
+    <tr><td><b>Stretched sample is too long!</b></td><td>The Akaizer result would be over about 44 seconds. Lower Stretch, or stretch a shorter selection.</td></tr>
+    <tr><td>A pattern name doesn't show in the pattern editor title</td><td>The title shows pattern info instead of the name when <b>Pattern info</b> is turned on in the Tracker's Config.</td></tr>
     <tr><td>A block I coloured shows no colour</td><td>Only blocks with notes are coloured. Add notes to that track and the colour appears.</td></tr>
     <tr><td>Colouring one slot coloured others too</td><td>Those slots play the same pattern. Use Clone In Place (<kbd>F5</kbd>) first to give the slot its own pattern.</td></tr>
     <tr><td>Insert doesn't open the tools</td><td>Check that you're running the Twisted firmware and are on the Song screen. The Tracker Mini has no song tools.</td></tr>
@@ -559,12 +604,14 @@
 
 <!-- ============================================================ 11 -->
 <section>
-  <h2>12 · Quick reference</h2>
+  <h2>13 · Quick reference</h2>
   <table>
     <tr><th>Do this</th><th>Press</th></tr>
     <tr><td>Open / close song tools</td><td><kbd>Insert</kbd> on the Song screen</td></tr>
     <tr><td>Name or rename a section</td><td><kbd>Rec</kbd>, select first slot, <kbd>F1</kbd>, type, <kbd>F8</kbd></td></tr>
-    <tr><td>Remove a section</td><td><kbd>Rec</kbd>, select a slot in it, <kbd>F2</kbd></td></tr>
+    <tr><td>Remove a section</td><td><kbd>Rec</kbd>, select a slot in it, <kbd>Shift</kbd> + <kbd>F1</kbd></td></tr>
+    <tr><td>Name a pattern</td><td>Select slot, <kbd>F2</kbd>, type, <kbd>F8</kbd></td></tr>
+    <tr><td>Akaizer a sample</td><td>Sample Editor, choose <b>Akaizer</b>, set, Preview, Apply</td></tr>
     <tr><td>Loop the current section</td><td><kbd>F3</kbd> (again to stop)</td></tr>
     <tr><td>Jump to another section live</td><td>Loop Section on, select a slot in the other section while playing</td></tr>
     <tr><td>Loop highlighted slots</td><td><kbd>Shift</kbd> + arrows in the grid, then <kbd>F4</kbd></td></tr>

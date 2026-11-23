@@ -144,6 +144,15 @@ void cSongEditor::refreshTempoField()
 
 void cSongEditor::refreshAddSlotLabel(bool isButtonPressed)
 {
+    if (toolsPage && !namingSection && !pickingColour)
+    {
+        // SHIFT turns F1 into Section Remove
+        display.setControlText2(label[0], isButtonPressed ? "Remove" : "Name");
+        display.refreshControl(label[0]);
+        display.synchronizeRefresh();
+        return;
+    }
+
     if (toolsPage || namingSection)
     {
         return;
@@ -518,12 +527,12 @@ void cSongEditor::refreshSongMarks()
 
 void cSongEditor::refreshToolsLabels()
 {
-    static const char* const kText1[8] = { "Section", "Section", "Loop",  "Loop",
+    static const char* const kText1[8] = { "Section", "Pattern", "Loop",  "Loop",
                                            "Clone",   "Make",    "Block", "Unlink" };
-    static const char* const kText2[8] = { "Name",     "Remove",    "Section", "Selection",
+    static const char* const kText2[8] = { "Name",     "Name",      "Section", "Selection",
                                            "In Place", "Variation", "Colour",  "Variation" };
     // the ones that change the song need edit (REC) mode
-    static const bool kNeedsEdit[8] = { true, true, false, false, true, true, false, true };
+    static const bool kNeedsEdit[8] = { true, false, false, false, true, true, false, true };
 
     display.setControlPosition(label[5], (800 / 8) * 5 + (800 / 16), -1);
     display.setControlPosition(label[6], (800 / 8) * 6 + (800 / 16), -1);
@@ -536,6 +545,10 @@ void cSongEditor::refreshToolsLabels()
     {
         display.setControlText(label[i], kText1[i]);
         display.setControlText2(label[i], kText2[i]);
+        if (i == 0 && buttons->isButtonPressed(interfaceButtonShift))
+        {
+            display.setControlText2(label[i], "Remove"); // SHIFT + F1 removes the section
+        }
         display.setControlValue(label[i], kText2[i][0] != 0 ? 1 : 0);
 
         bool active = !kNeedsEdit[i] || editMode;
@@ -586,7 +599,17 @@ void cSongEditor::updateMessage()
 
 void cSongEditor::showSectionKeyboard()
 {
-    snprintf(titleText, sizeof(titleText), "Name Section at Slot %d", namingSectionPos + 1);
+    if (namingPattern)
+    {
+        snprintf(titleText,
+                 sizeof(titleText),
+                 "Name Pattern %d",
+                 mtProject.song.playlist[namingSectionPos]);
+    }
+    else
+    {
+        snprintf(titleText, sizeof(titleText), "Name Section at Slot %d", namingSectionPos + 1);
+    }
     titleBar->show(true);
     titleBar->setTitle(titleText);
 

@@ -21,6 +21,7 @@ enum enSampleEditorEffect
     editorEffectTimestretchNote,
     editorEffectFadeIn,
     editorEffectFadeOut,
+    editorEffectAkaizer,
     editorEffectModular,
 
     //**********************//
@@ -81,6 +82,17 @@ extern float changeStep[4];
 extern float displayMult[4];
 extern const char* const afterValueText[4];
 extern const char displayType[4];
+}
+
+namespace akaizerParams
+{
+extern const char* const labelText[5];
+extern float upConstrain[5];
+extern float downConstrain[5];
+extern float changeStep[5];
+extern float displayMult[5];
+extern const char* const afterValueText[5];
+extern const char displayType[5];
 }
 
 namespace timestretchNoteParams

@@ -165,7 +165,8 @@ class cSongEditor : public ModuleBase
 
     bool toolsPage = false;
     bool pickingColour = false;
-    bool namingSection = false;
+    bool namingSection = false; // the name keyboard is open (section or pattern)
+    bool namingPattern = false; // ...and it's naming the slot's pattern
     uint8_t namingSectionPos = 0;
     SongLoopMode loopMode = SongLoopMode::off;
 
@@ -179,6 +180,7 @@ class cSongEditor : public ModuleBase
     void updateMessage();
 
     void startSectionNaming();
+    void startPatternNaming();
     void finishSectionNaming(bool save);
     void showSectionKeyboard();
 

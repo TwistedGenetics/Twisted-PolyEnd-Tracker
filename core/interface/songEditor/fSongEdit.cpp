@@ -70,7 +70,7 @@ void playSongFromSelectedPattern_stop();
 
 // Twisted song tools
 static void functToolsSectionName();
-static void functToolsSectionRemove();
+static void functToolsPatternName();
 static void functToolsLoopSection();
 static void functToolsLoopSelection();
 static void functToolsClone();
@@ -223,6 +223,7 @@ void cSongEditor::start(uint32_t options)
 void cSongEditor::stop()
 {
     pickingColour = false;
+    namingPattern = false;
 
     if (namingSection)
     {
@@ -1944,7 +1945,7 @@ void cSongEditor::setToolsScreenFunct()
     ip->clearButtonsRange(interfaceButton0, interfaceButton7);
 
     ip->setButtonObj(interfaceButton0, buttonPress, functToolsSectionName);
-    ip->setButtonObj(interfaceButton1, buttonPress, functToolsSectionRemove);
+    ip->setButtonObj(interfaceButton1, buttonPress, functToolsPatternName);
     ip->setButtonObj(interfaceButton2, buttonPress, functToolsLoopSection);
     ip->setButtonObj(interfaceButton3, buttonPress, functToolsLoopSelection);
     ip->setButtonObj(interfaceButton4, buttonPress, functToolsClone);
@@ -2184,6 +2185,7 @@ void cSongEditor::startSectionNaming()
     TwistedSong* ts = newFileManager.getTwistedSong();
 
     namingSection = true;
+    namingPattern = false;
     namingSectionPos = selectedSongPosition;
 
     int section = ts->findSectionStartingAt(namingSectionPos);
@@ -2209,12 +2211,58 @@ void cSongEditor::startSectionNaming()
     ip->setButtonObj(interfaceButton7, buttonPress, functKeyboardSave);
 }
 
+// name the pattern of the selected slot - the same name the pattern editor shows
+void cSongEditor::startPatternNaming()
+{
+    uint8_t pattern = mtProject.song.playlist[selectedSongPosition];
+    if (pattern == 0 || pattern == PLAYLIST_EMPTY_SLOT)
+    {
+        return;
+    }
+
+    namingSection = true;
+    namingPattern = true;
+    namingSectionPos = selectedSongPosition;
+
+    char* current = newFileManager.getPatternsMetadata()->getPatternName(pattern);
+    keyboardManager.fillName(current != nullptr ? current : (char*)"");
+    keyboardManager.activateKeyboard(PATTERN_NAME_LENGTH);
+
+    showSectionKeyboard();
+
+    ip->clearButtonsRange(interfaceButton0, interfaceButton7);
+    ip->clearAllPots();
+
+    ip->setButtonObj(interfaceButtonLeft, buttonPress, functKeyboardLeft);
+    ip->setButtonObj(interfaceButtonRight, buttonPress, functKeyboardRight);
+    ip->setButtonObj(interfaceButtonUp, buttonPress, functKeyboardUp);
+    ip->setButtonObj(interfaceButtonDown, buttonPress, functKeyboardDown);
+    ip->setButtonObj(interfaceButtonDelete, buttonPress, functKeyboardBackspace);
+    ip->setButtonObj(interfaceButtonInsert, buttonPress, functKeyboardEnter);
+    ip->clearButton(interfaceButtonCopy);
+
+    ip->setButtonObj(interfaceButton0, buttonPress, functKeyboardEnter);
+    ip->setButtonObj(interfaceButton6, buttonPress, functKeyboardCancel);
+    ip->setButtonObj(interfaceButton7, buttonPress, functKeyboardSave);
+}
+
 void cSongEditor::finishSectionNaming(bool save)
 {
     if (!namingSection)
     {
         return;
     }
+
+    if (save && namingPattern)
+    {
+        uint8_t pattern = mtProject.song.playlist[namingSectionPos];
+        char* name = keyboardManager.getName();
+        newFileManager.getPatternsMetadata()->setPatternName(pattern,
+                                                             name != nullptr ? name : (char*)"");
+        newFileManager.setProjectStructChanged();
+        save = false; // nothing to do for sections
+    }
+    namingPattern = false;
 
     if (save)
     {
@@ -2267,16 +2315,23 @@ static void functToolsSectionName()
     {
         return;
     }
+
+    if (SE->buttons->isButtonPressed(interfaceButtonShift))
+    {
+        SE->removeSectionAtSelection(); // SHIFT + F1
+        return;
+    }
+
     SE->startSectionNaming();
 }
 
-static void functToolsSectionRemove()
+static void functToolsPatternName()
 {
-    if (SE->isBusy || needsEditMode())
+    if (SE->isBusy)
     {
         return;
     }
-    SE->removeSectionAtSelection();
+    SE->startPatternNaming();
 }
 
 static void functToolsLoopSection()

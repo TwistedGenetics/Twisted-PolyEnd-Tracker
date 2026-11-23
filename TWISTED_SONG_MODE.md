@@ -21,7 +21,8 @@ The arrows, encoder, PLAY and REC keep working while the tools are showing.
 | Button | Tool | Needs REC (edit mode) |
 |---|---|---|
 | F1 | **Section Name** — start a section at the selected slot, or rename it | Yes |
-| F2 | **Section Remove** — remove the divider of the section the selection is in | Yes |
+| F2 | **Pattern Name** — name the selected slot's pattern (same name as in the pattern editor) | No |
+| SHIFT+F1 | **Section Remove** — remove the divider of the section the selection is in | Yes |
 | F3 | **Loop Section** — loop the section of the selected slot (press again to stop) | No |
 | F4 | **Loop Selection** — loop the highlighted slots (press again to stop) | No |
 | F5 | **Clone In Place** — give this slot its own copy of the pattern | Yes |
@@ -105,6 +106,21 @@ Cyan, Blue, Purple, Pink), e.g. drums blue and bass red.
   Clone In Place and Make Variation copy the colours; deleting blocks clears them.
 * Only blocks with notes are coloured; muted tracks show a darker shade.
 * Stored in `patterns/twistedSong` (file version 2; version 1 files still load).
+
+## Pattern names
+
+**F2 (Pattern Name)** names the selected slot's pattern with the pads, like a
+section. It's the pattern's own name, so the pattern editor (F8 More → F1
+Pattern Name) and the song view always show the same name.
+
+## Akaizer (Sample Editor)
+
+The Akaizer v1.2 timestretch (the engine from Twisted Timestretch, matched sample
+for sample against its reference renders) is a built-in Sample Editor effect:
+**Stretch** 25–2000 %, **Cycle Len** 20–2000 samples, **Cycle Freq** Auto
+(41000 ÷ length) or 20–2050 cps, **Pitch** ±24 semitones (length kept),
+**Loop BPM** Off or 40–300 (stretch from that tempo to the project tempo).
+Code: `core/effector/akaizerCore.h`, `core/effector/mtEffectAkaizer.*`.
 
 ## Files
 

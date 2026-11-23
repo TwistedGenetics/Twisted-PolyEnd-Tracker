@@ -1,5 +1,6 @@
 #include "mtSampleEditorEngine.h"
 #include "mtEffect.h"
+#include "mtEffectAkaizer.h"
 #include "mtEffectAmplifier.h"
 #include "mtEffectBitcrusher.h"
 #include "mtEffectChorus.h"
@@ -35,6 +36,7 @@ mtEffect* sampleEditorEffect[editorEffectMax] = { &sampleEditorNormalizer,
                                                   &sampleEditorTimestretchNote,
                                                   &sampleEditorFadeIn,
                                                   &sampleEditorFadeOut,
+                                                  &sampleEditorAkaizer,
                                                   &sampleEditorModular };
 
 //******************************DELAY
@@ -95,6 +97,22 @@ float changeStep[4] = { 1.0f, 1.0f, 0.01f, 1.0f };
 float displayMult[4] = { 1.0f, 1.0f, 1.0f, 0.25f };
 const char* const afterValueText[4] = { " BPM", nullptr, nullptr, nullptr };
 const char displayType[4] = { 'd', 'd', 'f', 'f' };
+}
+
+namespace akaizerParams
+{
+// Cycle Freq 0 = linked to the cycle length (41000 / length), Loop BPM 0 = off
+const char* const labelText[5] = { (const char* const)"Stretch",
+                                   (const char* const)"Cycle Len",
+                                   (const char* const)"Cycle Freq",
+                                   (const char* const)"Pitch",
+                                   (const char* const)"Loop BPM" };
+float upConstrain[5] = { 2000.0f, 2000.0f, 2050.0f, 24.0f, 300.0f };
+float downConstrain[5] = { 25.0f, 20.0f, 0.0f, -24.0f, 0.0f };
+float changeStep[5] = { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };
+float displayMult[5] = { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };
+const char* const afterValueText[5] = { " %", " smp", " cps", " st", " BPM" };
+const char displayType[5] = { 'd', 'd', 'd', 'd', 'd' };
 }
 
 namespace timestretchNoteParams

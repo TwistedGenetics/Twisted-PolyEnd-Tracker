@@ -9,6 +9,7 @@
 #include "mtSequencer.h"
 #include "sampleEditor/sampleEditor.h"
 #include "ptfx_manager.h"
+#include "mtEffectAkaizer.h"
 #include "util_math.h"
 
 #include <cr_section_macros.h>
@@ -1028,6 +1029,14 @@ void cSampleEditor::reloadParameterValueText(uint8_t idx)
 
     float displayedValue = effectDisplayParamsToAdjust[currentEffectIdx].parameter[idx] *
                            params.displayMult[idx];
+
+    // Akaizer: 0 means "linked" for Cycle Freq and "off" for Loop BPM
+    if (currentEffectIdx == editorEffectAkaizer && displayedValue == 0.0f &&
+        (idx == mtEffectAkaizer::CYCLE_FREQ || idx == mtEffectAkaizer::LOOP_BPM))
+    {
+        strcpy(parameterValueLabelPtr[idx], idx == mtEffectAkaizer::CYCLE_FREQ ? "Auto" : "Off");
+        return;
+    }
 
     if (params.displayType[idx] == 'd')
     {

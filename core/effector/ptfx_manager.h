@@ -2,12 +2,14 @@
 #define PTFX_MANAGER_H_
 
 #include "mtEffectModular.h"
+#include "mtSampleEditorEngine.h"
 #include "ptfx_loader.h"
 #include "tracker_plugin.h"
 #include <stdint.h>
 
 static constexpr uint16_t kMaxModularPlugins = 128;
-static constexpr uint16_t kBuiltInEffectsCount = 17;
+// every built-in effect, i.e. everything before the Modular (plugin) slot
+static constexpr uint16_t kBuiltInEffectsCount = editorEffectModular;
 
 struct PtfxEntry
 {
