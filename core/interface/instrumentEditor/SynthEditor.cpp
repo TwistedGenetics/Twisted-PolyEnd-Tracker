@@ -825,7 +825,8 @@ bool twHoldsAmpOpen(const std::string& lowerValueText)
 {
     return lowerValueText.find("aeg") != std::string::npos || lowerValueText.find("volume") != std::string::npos ||
            lowerValueText.compare(0, 3, "amp") == 0 || lowerValueText.find(" amp") != std::string::npos ||
-           lowerValueText.find("(amp") != std::string::npos; // the stock models' "Amp ..." (not "Ramp Up")
+           lowerValueText.find("(amp") != std::string::npos || // the stock models' "Amp ..." (not "Ramp Up")
+           lowerValueText.find("bank") != std::string::npos;    // CRAFTY: a modulated bank keeps rebuilding
 }
 
 bool twIsEnvTime(const std::string& lowerName)

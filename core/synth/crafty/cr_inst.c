@@ -81,17 +81,38 @@ static const int16_t (*bank_base(const cr_inst_t *in, uint32_t b))[CR_WT_N]
     }
     return cr_wt_factory(b);
 }
-static void tables(cr_inst_t *in)
+/* Twisted Tracker: building a bank takes several milliseconds on the Tracker, longer than an audio block, so
+ * cr_inst_render no longer builds one (a bank the matrix moves would stall the audio interrupt again and again
+ * and freeze the Tracker). It leaves the old bank playing and cr_inst_tables_pending() says so; the main loop
+ * then calls cr_inst_tables() to build it. */
+static void tables_ex(cr_inst_t *in, int defer)
 {
     uint32_t want[2], k;
     want[0] = cr_bank_of(cr_synth_eff(&in->syn, CR_W1BANK), 0);   /* the banks as the matrix leaves them */
     want[1] = cr_bank_of(cr_synth_eff(&in->syn, CR_W2BANK), 1);
     for (k = 0; k < 2u; k++)
         if (in->tb[k] != want[k]) {
+            if (defer && in->tb[k] != 0xFFu) {
+                in->tb_pending = 1;
+                continue;
+            }
             cr_wt_build(&in->tab[k], bank_base(in, want[k]));
             in->tb[k] = (uint8_t)want[k];
         }
-    cr_synth_tables(&in->syn, &in->tab[0], &in->tab[1], want[1] == CR_BANK_NOISE);
+    cr_synth_tables(&in->syn, &in->tab[0], &in->tab[1], in->tb[1] == CR_BANK_NOISE);
+}
+static void tables(cr_inst_t *in)
+{
+    tables_ex(in, 1); /* also a bank change from a knob, a CC or a program change: the main loop builds it */
+}
+int cr_inst_tables_pending(const cr_inst_t *in)
+{
+    return in->tb_pending;
+}
+void cr_inst_tables(cr_inst_t *in)
+{
+    in->tb_pending = 0;
+    tables_ex(in, 0);
 }
 
 void cr_inst_init(cr_inst_t *in)
@@ -268,7 +289,7 @@ void cr_inst_render(cr_inst_t *in, float *lr, uint32_t n)
     cr_patch_t ap;                              /* the patch as the arp-seq sees it (TEMPO, RATE, ARP modulated) */
     if (n > CR_INST_FRAMES)
         n = CR_INST_FRAMES;
-    tables(in);                                 /* a bank the matrix moved */
+    tables_ex(in, 1);                           /* a bank the matrix moved (built later, in the main loop) */
     cr_synth_arp_view(&in->syn, &in->p, &ap);
     if (in->playing && in->ppq >= 0.0 && in->bpm > 0.f) {
         /* locked to the host: MIDI-clock ticks (24 a beat) placed from its song position, a step on each multiple */

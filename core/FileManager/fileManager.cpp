@@ -69,6 +69,8 @@ void cFileManager::init(FileSystem* fileSystem, Synth* synth, bool stereoSampleM
 
 void cFileManager::update()
 {
+    twistedCraftyBuildTables(); // Twisted: CRAFTY banks, built here and not in the audio interrupt
+
     if (currentOperation == fmNoOperation && !sequencer.isRenderMode())
     {
         autoSaveProjectToWorkspace();

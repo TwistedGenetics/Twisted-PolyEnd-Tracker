@@ -202,7 +202,7 @@
     <b>Firmware:</b> Twisted PolyEnd Tracker, based on Polyend Tracker Community Edition 1.0.0<br>
     <b>For:</b> Tracker+ (the original Tracker builds too; the Tracker Mini has no song tools)<br>
     <b>Repository:</b> github.com/TwistedGenetics/Twisted-PolyEnd-Tracker<br>
-    <b>Manual version:</b> 2.8 · November 2026
+    <b>Manual version:</b> 2.9 · November 2026
   </div>
 </div>
 
@@ -892,6 +892,7 @@
     <tr><td>A folder opens slowly every time</td><td>It's only slow the first time after a change. If it's slow every time, the card may be write-protected (the index can't be saved), or files in it are changing between visits.</td></tr>
     <tr><td>A random patch from before v1.14.0 drones after the note ends</td><td>CRAFTY: set <b>Amp EG</b> back to Preset and check no mod <b>Dest</b> is an AEG or Volume. DX7: set <b>Algorithm</b> back to 0 (the voice's own). Any model: turn delay feedback down.</td></tr>
     <tr><td>The Tracker stalls or hangs moving around the menus with CRAFTY (before v1.16.0)</td><td>Fixed in v1.16.0: CRAFTY re-read its user file and re-imported every wavetable each time a CRAFTY voice was made. It now only re-reads <code>/Crafty</code> when something in it has changed.</td></tr>
+    <tr><td>The Tracker freezes playing CRAFTY, or turning Bank 1 / Bank 2 (before v1.17.0)</td><td>Fixed in v1.17.0. Getting a wavetable bank ready takes several milliseconds, and CRAFTY did it inside the audio: a bank the mod matrix moved (a <b>Dest</b> of Bank 1 or Bank 2) did it again and again and froze the Tracker. Banks are now got ready between screen updates; when a bank changes, the old one plays for a moment first. Random Patch no longer routes mod to the banks.</td></tr>
     <tr><td>My DX7 banks don't show</td><td>Check they're 32-voice banks (4104-byte <code>.syx</code>) directly in <code>/DX7</code>, then choose DX7 again or reload the project. Single-voice sysex files aren't read.</td></tr>
     <tr><td>My wavetables don't show as USER banks</td><td>Check they're WAV files in <code>/Crafty/Wavetables</code> (not a sub-folder), then choose CRAFTY again or reload the project. Files with frames longer than 4096 samples, or unreadable WAVs, are skipped.</td></tr>
     <tr><td>A CRAFTY instrument is silent</td><td>Up to four CRAFTY instruments can play at once (there are only three SYN slots, so this shouldn't happen). Choose the model again or reload the project.</td></tr>

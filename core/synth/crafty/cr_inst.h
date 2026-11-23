@@ -24,6 +24,7 @@ typedef struct cr_inst {
     cr_globals_t g;                     /* bend range, velocity, breath (the FM-1's GLO pages) */
     cr_wtbank_t tab[2];                 /* Wave 1's and Wave 2's bank, ready to play */
     uint8_t tb[2];                      /* which banks those are (0xFF: none yet) */
+    volatile uint8_t tb_pending;        /* Twisted: render wants another bank (cr_inst_tables) */
     const uint8_t *user;                /* the user area (CR_USER_BYTES, src/core/cr_user.h), or 0: no user presets / banks */
     uint16_t cur;                       /* the preset last loaded (0..191) */
     uint8_t dirty;                      /* the working patch differs from it */
@@ -57,6 +58,8 @@ void cr_inst_all_off(cr_inst_t *in);
  * host's tempo, or the patch's TEMPO when the host gives none. */
 void cr_inst_transport(cr_inst_t *in, double ppq, float bpm, int playing);
 void cr_inst_render(cr_inst_t *in, float *lr, uint32_t n);    /* n <= 128 frames, interleaved L R, about -1..1 */
+int cr_inst_tables_pending(const cr_inst_t *in);              /* Twisted: render wants a bank built ... */
+void cr_inst_tables(cr_inst_t *in);                           /* ... so build it (main loop, not the audio) */
 /* a parameter changed from inside (MIDI CC): its id + 1, or 0 when none is left. A whole new patch (program change)
  * is reported once by cr_inst_take_patch_changed(). */
 uint32_t cr_inst_take_changed(cr_inst_t *in);

@@ -522,8 +522,20 @@ void craftyRequestScanImpl()
     scan.requested = true;
 }
 
+// a bank the mod matrix, a knob or a CC moved to: built here, never in the audio interrupt (see cr_inst.c)
+void craftyBuildTablesImpl()
+{
+    for (int i = 0; i < kPoolSize; i++)
+    {
+        auto* in = reinterpret_cast<cr_inst_t*>(craftyPool[i]);
+        if (craftyPoolUsed[i] && cr_inst_tables_pending(in))
+            cr_inst_tables(in);
+    }
+}
+
 void craftyServiceImpl()
 {
+
     FileSystem* fs = Tracker::getInstance()->getPlatform()->getFileSystem();
     if (fs == nullptr || fs->isAsyncReadBusy())
         return;
@@ -892,6 +904,10 @@ void craftyRequestScan()
 void twistedCraftyService()
 {
     polysynth::craftyService();
+}
+void twistedCraftyBuildTables()
+{
+    polysynth::craftyBuildTablesImpl();
 }
 void twistedCraftyRequestScan()
 {

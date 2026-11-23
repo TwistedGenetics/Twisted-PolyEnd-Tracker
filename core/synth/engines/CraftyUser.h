@@ -7,7 +7,9 @@
 #ifdef FEATURE_SYNTH
 void twistedCraftyService();     // call from the main loop when the file manager is idle
 void twistedCraftyRequestScan(); // read the folder again (a CRAFTY instrument was made)
+void twistedCraftyBuildTables(); // every main-loop pass: build the wavetable banks the voices are waiting for
 #else
+inline void twistedCraftyBuildTables() {}
 inline void twistedCraftyService() {}
 inline void twistedCraftyRequestScan() {}
 #endif
