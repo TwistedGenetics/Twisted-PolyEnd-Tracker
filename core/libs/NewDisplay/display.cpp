@@ -80,6 +80,12 @@
 #include "images/reese_mini_nomark_80x28_L2.h"
 #include "images/crafty_med_108x40_L2.h"
 #include "images/crafty_mini_nomark_80x28_L2.h"
+#include "images/sub_med_108x40_L2.h"
+#include "images/sub_mini_nomark_80x28_L2.h"
+#include "images/juno_med_108x40_L2.h"
+#include "images/juno_mini_nomark_80x28_L2.h"
+#include "images/dx7_med_108x40_L2.h"
+#include "images/dx7_mini_nomark_80x28_L2.h"
 
 #endif
 
@@ -218,6 +224,12 @@ const strBitmap bitmaps[displayBitmapsCount] = {
     { reese_med_108x40_L2, 129400, 1080, 108, 40, L2, 27 },
     { crafty_mini_nomark_80x28_L2, 130500, 560, 80, 28, L2, 20 },
     { crafty_med_108x40_L2, 131100, 1080, 108, 40, L2, 27 },
+    { sub_mini_nomark_80x28_L2, 132200, 560, 80, 28, L2, 20 },
+    { sub_med_108x40_L2, 132800, 1080, 108, 40, L2, 27 },
+    { juno_mini_nomark_80x28_L2, 133900, 560, 80, 28, L2, 20 },
+    { juno_med_108x40_L2, 134500, 1080, 108, 40, L2, 27 },
+    { dx7_mini_nomark_80x28_L2, 135600, 560, 80, 28, L2, 20 },
+    { dx7_med_108x40_L2, 136200, 1080, 108, 40, L2, 27 },
 
 #endif
 };

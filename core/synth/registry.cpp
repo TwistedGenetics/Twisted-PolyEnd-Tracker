@@ -5,6 +5,9 @@
 #include "engines/ChiptuneSynthVoice.h"
 #include "engines/ReeseSynthVoice.h"
 #include "engines/CraftySynthVoice.h"
+#include "engines/SubSynthVoice.h"
+#include "engines/JunoSynthVoice.h"
+#include "engines/FmSynthVoice.h"
 
 namespace polysynth
 {
@@ -39,6 +42,10 @@ void InstrumentTypeRegistry::registerInstrumentTypes(
     registry.addInstrumentType(static_cast<int>(InstrumentTypeId::kReeseSynth), createReeseSynth());
     // Twisted: CRAFTY (Crafty Synth, the FM-1's CRAFTsynth 2.0-style wavetable synth)
     registry.addInstrumentType(static_cast<int>(InstrumentTypeId::kCraftySynth), createCraftySynth());
+    // Twisted: DREADNOUGHT's SUB, JUNO and DX7 engines
+    registry.addInstrumentType(static_cast<int>(InstrumentTypeId::kSubSynth), createSubSynth());
+    registry.addInstrumentType(static_cast<int>(InstrumentTypeId::kJunoSynth), createJunoSynth());
+    registry.addInstrumentType(static_cast<int>(InstrumentTypeId::kFmSynth), createFmSynth());
 }
 
 } // namespace polysynth

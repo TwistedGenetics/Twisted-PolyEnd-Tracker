@@ -84,6 +84,12 @@ enum enDisplayBitmaps
     kBitmapREESE,
     kBitmapMiniCRAFTY,
     kBitmapCRAFTY,
+    kBitmapMiniSUB,
+    kBitmapSUB,
+    kBitmapMiniJUNO,
+    kBitmapJUNO,
+    kBitmapMiniDX7,
+    kBitmapDX7,
 
 #endif
 

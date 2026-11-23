@@ -202,7 +202,7 @@
     <b>Firmware:</b> Twisted PolyEnd Tracker, based on Polyend Tracker Community Edition 1.0.0<br>
     <b>For:</b> Tracker+ (the original Tracker builds too; the Tracker Mini has no song tools)<br>
     <b>Repository:</b> github.com/TwistedGenetics/Twisted-PolyEnd-Tracker<br>
-    <b>Manual version:</b> 2.1 · November 2026
+    <b>Manual version:</b> 2.2 · November 2026
   </div>
 </div>
 
@@ -225,9 +225,10 @@
     <li><span class="n">13</span> Crop to New (Sample Editor)</li>
     <li><span class="n">14</span> REESE synth</li>
     <li><span class="n">15</span> CRAFTY synth</li>
-    <li><span class="n">16</span> Projects, saving and compatibility</li>
-    <li><span class="n">17</span> Messages and troubleshooting</li>
-    <li><span class="n">18</span> Quick reference</li>
+    <li><span class="n">16</span> SUB, JUNO and DX7 synths</li>
+    <li><span class="n">17</span> Projects, saving and compatibility</li>
+    <li><span class="n">18</span> Messages and troubleshooting</li>
+    <li><span class="n">19</span> Quick reference</li>
   </ol>
 </section>
 
@@ -248,6 +249,7 @@
     <tr><td><b>Faster sample browser</b></td><td>Folders open much faster, and a folder of up to 499 samples is shown as one list instead of being split into groups of 99.</td></tr>
     <tr><td><b>REESE synth</b></td><td>The Reese bass engine from DREADNOUGHT as a Tracker+ synth, with its 10 sounds: classic jungle, OG, techstep, neuro and more.</td></tr>
     <tr><td><b>CRAFTY synth</b></td><td>Crafty Synth, the CRAFTsynth 2.0-style wavetable synth from the FM-1, with its 64 presets, wavetables, modifiers, filters, mod matrix, arp and effects.</td></tr>
+    <tr><td><b>SUB, JUNO, DX7</b></td><td>Three more engines from DREADNOUGHT: an SH-101-style jungle bass, a Juno-60/106-style polysynth with its chorus, and a six-operator DX7 that loads your DX7 banks from the SD card.</td></tr>
     <tr><td><b>Graffiti start screen</b></td><td>The Tracker+ starts up with the Twisted Tracker graffiti logo.</td></tr>
     <tr><td><b>Crop to New</b></td><td>In the Sample Editor, copy the part between Start and End into a new instrument, leaving the original untouched.</td></tr>
   </table>
@@ -795,9 +797,41 @@
   <p>Copy the plugin's user file to <code>/Crafty/Crafty Synth.user</code>. Its 128 user presets show up after the factory ones (<b>U1-1</b> to <b>U16-8</b>), and its user banks come first; the folder's tables fill the banks it leaves free.</p>
 </section>
 
+<!-- ============================================================ dreadnought -->
+<section>
+  <h2>16 · SUB, JUNO and DX7 synths</h2>
+  <p>Three more of DREADNOUGHT's engines are now Tracker+ synths. Pick them as the model on a SYN slot, like REESE and CRAFTY. SUB and JUNO work like REESE: <b>Preset</b> picks a sound and every other knob moves it (switches start on <b>Preset (…)</b>).</p>
+
+  <h3>SUB: SH-101-style jungle bass (mono)</h3>
+  <p>One oscillator with saw, pulse (with PWM), a sub an octave or two down and noise, into a resonant 4-pole filter that self-oscillates in tune. Then the jungle part: <b>Drive</b> (Soft, Hard, Fold, Rect), <b>Crush</b>, <b>Tone</b>, and the <b>Clean Sub Split</b>, which keeps everything below the split frequency clean however hard you drive the rest.</p>
+  <ul>
+    <li><b>Presets:</b> Dread, Donk, Roller, Wobble, Acid 101, 808 Sub, Growl, Square Sub, Punch, Tech Sub, Crushed, Rave Stab, Init.</li>
+    <li><b>Accent:</b> a loud note (velocity above 100) is an accent. It opens the filter and lifts the level, by the <b>Accent</b> amount, like the 101's sequencer accents.</li>
+    <li><b>Portamento:</b> Off, Auto (only when notes overlap) or On (every note).</li>
+    <li>It has its own <b>filter envelope</b> (starting as the amp's, like the 101's single envelope) and an <b>LFO</b> on the cutoff (shape, rate, depth, key reset) for wobbles.</li>
+  </ul>
+
+  <h3>JUNO: Juno-60 / 106-style polysynth (6 voices)</h3>
+  <p>A DCO with saw and pulse (PWM from the LFO, by hand or from the envelope), sub and noise; the HPF (Boost, Flat, 2, 3); a resonant 4-pole filter with envelope (normal or inverted), LFO, key and velocity; one ADSR; the LFO with its delay (free, key or synced to the tempo); and the <b>Chorus I, II and I+II</b> in stereo.</p>
+  <ul>
+    <li><b>Presets:</b> Init, Juno Pad, Brass, Strings, 106 Bass, Organ, Rave Stab, Pluck, Piano, Sub Bass, Acid Poly, Glass, Dark Pad, Noise Sweep, Whistle, Hooverish, Jungle Stab.</li>
+    <li>Up to 6 notes at once. DREADNOUGHT's VOICES setting (mono / fewer voices) isn't here: a Tracker track plays one note at a time anyway.</li>
+  </ul>
+
+  <h3>DX7: six-operator FM (6 voices)</h3>
+  <p>DREADNOUGHT's DX7 engine, which plays voices the way Dexed does: 32 algorithms, the DX7 envelopes, keyboard scaling, velocity, the LFO, the pitch envelope and feedback.</p>
+  <ul>
+    <li><b>Voice</b> picks the sound: DREADNOUGHT's 10 factory voices first (Dub FM Bass, FM Reese, Hollow Stab, Dark Bell, Metal Hit, FM Pluck, Dark Pad, Growl Bass, Sine Sub, Init Voice), then your banks.</li>
+    <li><b>Your DX7 banks:</b> put 32-voice DX7 sysex banks (<code>.syx</code>, 4104 bytes) in the folder <code>/DX7</code> on the SD card. The Tracker makes the folder the first time you use DX7. Up to 8 banks, in name order: <b>B1-01</b> to <b>B8-32</b>, with each voice's own name.</li>
+    <li>The knobs move the chosen voice: <b>Bright</b> (the modulators' levels), <b>Env Time</b> (every envelope), <b>Attack</b> and <b>Release</b> (the carriers'), <b>Algorithm</b> (starts on the voice's own), <b>Feedback</b>, the LFO's speed, delay and depths, <b>Transpose</b> and <b>Gain</b>.</li>
+    <li>Banks you add show up the next time you choose DX7 or load a project that uses it.</li>
+  </ul>
+  <div class="note"><b>Memory</b>The DX7 voices and banks take 64 KB more from the sample memory (now 1 MB less than stock firmware, about 58.9 MB).</div>
+</section>
+
 <!-- ============================================================ 10 -->
 <section>
-  <h2>16 · Projects, saving and compatibility</h2>
+  <h2>17 · Projects, saving and compatibility</h2>
   <ul>
     <li>Sections, variation links and block colours are saved in the file <code>patterns/twistedSong</code> inside each project, next to the pattern files.</li>
     <li>They're saved and opened with the project as usual. You don't need to do anything extra.</li>
@@ -808,7 +842,7 @@
   <ul>
     <li>Sections and block colours aren't shown.</li>
     <li>Instruments in Akaizer play mode don't play on stock firmware (it doesn't know the mode), and <code>K</code> / <code>Y</code> FX are ignored. Switch an instrument to another mode, or render it with the Sample Editor's Akaizer, before sharing.</li>
-    <li>A SYN slot set to REESE or CRAFTY won't play on stock firmware, which doesn't have the engine. Resample the part to audio before sharing the project.</li>
+    <li>A SYN slot set to REESE, CRAFTY, SUB, JUNO or DX7 won't play on stock firmware, which doesn't have the engine. Resample the part to audio before sharing the project.</li>
     <li>Variations play as ordinary patterns with the notes they had when last saved.</li>
     <li>Edits made on stock firmware don't update variations. When you're back on Twisted firmware, the links resume from the next time an original is saved.</li>
   </ul>
@@ -817,7 +851,7 @@
 
 <!-- ============================================================ 10 -->
 <section>
-  <h2>17 · Messages and troubleshooting</h2>
+  <h2>18 · Messages and troubleshooting</h2>
   <table>
     <tr><th>Message or problem</th><th>Meaning / what to do</th></tr>
     <tr><td><b>Press REC to edit the song</b></td><td>That tool changes the song. Turn on edit mode with <kbd>Rec</kbd> first.</td></tr>
@@ -840,6 +874,7 @@
     <tr><td><b>Set Start and End first</b></td><td>Start and End are on top of each other, so there's nothing to copy.</td></tr>
     <tr><td>No colour behind the track names</td><td>Only coloured tracks show one. If no names show at all, set <b>Pattern info</b> in Config back to show them.</td></tr>
     <tr><td>A folder opens slowly every time</td><td>It's only slow the first time after a change. If it's slow every time, the card may be write-protected (the index can't be saved), or files in it are changing between visits.</td></tr>
+    <tr><td>My DX7 banks don't show</td><td>Check they're 32-voice banks (4104-byte <code>.syx</code>) directly in <code>/DX7</code>, then choose DX7 again or reload the project. Single-voice sysex files aren't read.</td></tr>
     <tr><td>My wavetables don't show as USER banks</td><td>Check they're WAV files in <code>/Crafty/Wavetables</code> (not a sub-folder), then choose CRAFTY again or reload the project. Files with frames longer than 4096 samples, or unreadable WAVs, are skipped.</td></tr>
     <tr><td>A CRAFTY instrument is silent</td><td>Up to four CRAFTY instruments can play at once (there are only three SYN slots, so this shouldn't happen). Choose the model again or reload the project.</td></tr>
     <tr><td>Insert doesn't open the tools</td><td>Check that you're running the Twisted firmware and are on the Song screen. The Tracker Mini has no song tools.</td></tr>
@@ -849,7 +884,7 @@
 
 <!-- ============================================================ 11 -->
 <section>
-  <h2>18 · Quick reference</h2>
+  <h2>19 · Quick reference</h2>
   <table>
     <tr><th>Do this</th><th>Press</th></tr>
     <tr><td>Open / close song tools</td><td><kbd>Insert</kbd> on the Song screen</td></tr>
@@ -869,6 +904,8 @@
     <tr><td>Colour blocks</td><td>Select blocks, <kbd>Insert</kbd>, <kbd>F7</kbd>, pick <kbd>F1</kbd>–<kbd>F8</kbd></td></tr>
     <tr><td>Remove colour</td><td>Select blocks, <kbd>Insert</kbd>, <kbd>F7</kbd>, <kbd>Delete</kbd></td></tr>
     <tr><td>Colour a track in the pattern editor</td><td><kbd>F8</kbd> (More) to the Name page, <kbd>F3</kbd>, pick <kbd>F1</kbd>–<kbd>F8</kbd></td></tr>
+    <tr><td>SH-101 bass / Juno / DX7</td><td>Instrument screen, a SYN slot, model <b>SUB</b>, <b>JUNO</b> or <b>DX7</b></td></tr>
+    <tr><td>Load DX7 banks</td><td>Copy <code>.syx</code> banks to <code>/DX7</code> on the SD card, then choose DX7</td></tr>
     <tr><td>Play Crafty Synth</td><td>Instrument screen, a SYN slot, model <b>CRAFTY</b>, turn Preset</td></tr>
     <tr><td>Play a Reese bass</td><td>Instrument screen, a SYN slot, model <b>REESE</b>, turn Preset</td></tr>
     <tr><td>Copy part of a sample to a new instrument</td><td>Sample Editor, set Start / End, <kbd>F5</kbd> Crop to New</td></tr>

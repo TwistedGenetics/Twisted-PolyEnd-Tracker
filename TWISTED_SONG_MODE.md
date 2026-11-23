@@ -198,6 +198,19 @@ Code: `core/FileManager/fileManagerBrowse.cpp`, `platforms/*/SD.cpp`
   dates); `/.TwistedIndex/<path hash>_d<filter>.idx` holds the counted, split list. A sub-folder that fills the list
   without having been split (or a split group that comes up empty) drops its parent's index so it recounts.
 
+## SUB, JUNO and DX7 (v1.10.0)
+
+- `TwistedPresetVoice.h`: a shared base (Preset + one parameter per value: offsets, or Preset/choice for values with
+  few settings) and float DSP pieces (polyBLEP, ladder, times).
+- SUB (`SubSynthVoice.cpp`): DREADNOUGHT's SH-101 bass rewritten in float (no Clipper/Felucca code); mono; accent =
+  velocity > 100; own filter envelope and cutoff LFO.
+- JUNO (`JunoSynthVoice.cpp`): DREADNOUGHT's JUNO code per Tracker voice (6); HPF and chorus per voice (linear; the
+  chorus sweep and a free LFO from one shared clock).
+- DX7 (`FmSynthVoice.cpp`): DREADNOUGHT's dn_fm.c (Dexed MSFA port, Apache-2.0 origin) vendored in core/synth/dreadnought
+  with DN_FM_NV 1 (one engine per Tracker voice, a pool of 24 in external RAM), built by core/libs/dreadnought;
+  `/DX7/*.syx` 32-voice banks (up to 8) read in the file manager's idle time.
+- SAMPLE_MEMORY_SIZE now 1 MB below stock.
+
 ## Files
 
 | File | What |

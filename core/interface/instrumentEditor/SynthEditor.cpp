@@ -22,7 +22,7 @@ static const uint16_t framesPlacesSynth[1][4] = {
 };
 
 const char* const synthModelNames[Synth::kSynthTypes.size()] = {
-    "ACD", "FAT", "VAP", "WTFM", "PERC", "DIRT", "CHIP", "REESE", "CRAFTY",
+    "ACD", "FAT", "VAP", "WTFM", "PERC", "DIRT", "CHIP", "REESE", "CRAFTY", "SUB", "JUNO", "DX7",
 };
 
 static const int synthModelListImages[Synth::kSynthTypes.size()] = {
@@ -30,7 +30,8 @@ static const int synthModelListImages[Synth::kSynthTypes.size()] = {
     enDisplayBitmaps::kBitmapMiniVAP,  enDisplayBitmaps::kBitmapMiniWTFM,
     enDisplayBitmaps::kBitmapMiniPERC, enDisplayBitmaps::kBitmapMiniDIRT,
     enDisplayBitmaps::kBitmapMiniCHIP, enDisplayBitmaps::kBitmapMiniREESE,
-    enDisplayBitmaps::kBitmapMiniCRAFTY
+    enDisplayBitmaps::kBitmapMiniCRAFTY, enDisplayBitmaps::kBitmapMiniSUB,
+    enDisplayBitmaps::kBitmapMiniJUNO, enDisplayBitmaps::kBitmapMiniDX7
 };
 
 static cInstrumentEditor* IE = &instrumentEditor;

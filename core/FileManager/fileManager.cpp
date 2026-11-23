@@ -9,6 +9,7 @@
 #include "mtSequencer.h"
 
 #include "engines/CraftyUser.h"
+#include "engines/DxBanks.h"
 #include "fileManager.h"
 #include "fileTransfer.h"
 #include "instrumentFileValidation.h"
@@ -73,6 +74,7 @@ void cFileManager::update()
         autoSaveProjectToWorkspace();
         serviceLinkedVariations();
         twistedCraftyService(); // Twisted: CRAFTY's wavetable folder
+        twistedDxService();     // Twisted: the DX7 engine's /DX7 banks
 
         return;
     }

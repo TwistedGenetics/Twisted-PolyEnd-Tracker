@@ -42,7 +42,10 @@ enum class InstrumentTypeId
     kChiptuneSynth,
     kReeseSynth,  // Twisted: REESE
     kCraftySynth, // Twisted: CRAFTY
-    kLastSynth = kCraftySynth,
+    kSubSynth,    // Twisted: SUB (DREADNOUGHT)
+    kJunoSynth,   // Twisted: JUNO (DREADNOUGHT)
+    kFmSynth,     // Twisted: DX7 (DREADNOUGHT)
+    kLastSynth = kFmSynth,
     kDelay = 1000,
     kReverb,
 };
