@@ -524,6 +524,46 @@ static void functSynthBack()
     IE->cleanPatchEditorResources();
 }
 
+// Twisted: the Preset (DX7: Voice) list also lists the patches you saved for this model, after a "> ".
+bool cInstrumentEditor::twIsPresetParam(int paramIdx)
+{
+    int syntPartIdx = mtProject.values.lastUsedInstrument - SYNTH_INSTRUMENTS_START_IDX;
+    const auto& metadata = getSynth()->getPatch(syntPartIdx).getMetadata();
+    if (paramIdx < 0 || paramIdx >= std::ssize(metadata.params))
+        return false;
+    for (int i = 0; i < std::ssize(metadata.params); i++) // the first named parameter
+    {
+        const auto& p = metadata.params[i];
+        if (p.displayName.empty())
+            continue;
+        return i == paramIdx && p.isEnum && p.minValue == 0 &&
+               (p.displayName == "Preset" || p.displayName == "PRESET" || p.displayName == "Voice");
+    }
+    return false;
+}
+
+void cInstrumentEditor::twLoadSavedFromList(int savedIdx)
+{
+    int syntPartIdx = mtProject.values.lastUsedInstrument - SYNTH_INSTRUMENTS_START_IDX;
+    if (savedIdx < 0 || savedIdx >= static_cast<int>(twSavedNames.size()) || savedIdx == twSavedSelected)
+        return;
+
+    const std::string name = twSavedNames[savedIdx]; // the list is rebuilt below
+    if (!getSynth()->loadPatch(syntPartIdx, name.c_str()))
+    {
+        mtPopups.show(0, "Error loading patch");
+        return;
+    }
+    twSavedSelected = savedIdx;
+
+    SynthPartSettings tempSettings = mtProject.values.synthPart[syntPartIdx];
+    getSynth()->initSynthPartMacrosValues(syntPartIdx, tempSettings);
+    engine.refreshSynthInstrumentParams(tempSettings, syntPartIdx);
+    newFileManager.setProjectStructChanged();
+
+    showSynthPatchEditorScreen();
+}
+
 void cInstrumentEditor::changeSynthPatchEditorValue(int value, ValueChangeSource source)
 {
     bool invert = source != kEncoder || interfaceGlobals.invertValForList;
@@ -792,6 +832,13 @@ void cInstrumentEditor::changeSynthPatchParamValue(int16_t value)
                 paramValueListPos = clamp(paramValueListPos + value,
                                           0,
                                           modelListData.length ? modelListData.length - 1 : 0);
+
+                if (twSavedBase >= 0 && twIsPresetParam(paramIdx) && paramValueListPos >= twSavedBase)
+                {
+                    twLoadSavedFromList(paramValueListPos - twSavedBase); // one of your saved patches
+                    return;
+                }
+                twSavedSelected = -1;
 
                 DISABLE_AUDIO_INTERRUPTS();
                 patch.setParamValue(
@@ -1615,6 +1662,25 @@ void cInstrumentEditor::showSynthPatchSectionParamValue(bool refreshList)
 
             int length = param.maxValue + 1;
 
+            twSavedNames.clear();
+            twSavedBase = -1;
+            if (twIsPresetParam(paramIdx)) // the saved patches of this model follow the presets
+            {
+                for (auto& name : getSynth()->getPatchList(syntPartIdx))
+                    if (name != Synth::kInitPatchName)
+                        twSavedNames.emplace_back(name);
+                if (!twSavedNames.empty())
+                {
+                    twSavedBase = length;
+                    length += static_cast<int>(twSavedNames.size());
+                }
+            }
+            if (twSavedSelected >= static_cast<int>(twSavedNames.size()) ||
+                (twSavedSelected >= 0 && getSynth()->getPatchName(syntPartIdx) != twSavedNames[twSavedSelected]))
+            {
+                twSavedSelected = -1;
+            }
+
             paramValueListTextBuff = new char[length * kMaxSynthListStringLen];
             paramValueListNames = new char*[length];
 
@@ -1624,7 +1690,12 @@ void cInstrumentEditor::showSynthPatchSectionParamValue(bool refreshList)
             {
                 paramValueListNames[idx] = &paramValueListTextBuff[kMaxSynthListStringLen * idx];
 
-                if (formatter != nullptr)
+                if (twSavedBase >= 0 && idx >= twSavedBase)
+                {
+                    snprintf(paramValueListNames[idx], kMaxSynthListStringLen, "> %s",
+                             twSavedNames[idx - twSavedBase].c_str());
+                }
+                else if (formatter != nullptr)
                 {
                     polystrncpy(paramValueListNames[idx],
                                 formatter(patch, idx).c_str(),
@@ -1638,6 +1709,8 @@ void cInstrumentEditor::showSynthPatchSectionParamValue(bool refreshList)
 
             paramValueListPos =
               std::lround(patch.getParamValue(paramIdx).value_or(param.defaultValue.value_or(0)));
+            if (twSavedBase >= 0 && twSavedSelected >= 0)
+                paramValueListPos = twSavedBase + twSavedSelected;
 
             paramValueListPos = clamp<int>(paramValueListPos, 0, length ? length - 1 : 0);
             modelListData.rowHeight = 0;
@@ -1664,6 +1737,8 @@ void cInstrumentEditor::showSynthPatchSectionParamValue(bool refreshList)
     if (paramValueMode == kList)
     {
         paramValueListPos = std::lround(value);
+        if (twSavedBase >= 0 && twSavedSelected >= 0 && twIsPresetParam(paramIdx))
+            paramValueListPos = twSavedBase + twSavedSelected;
 
         display.setControlHide(barControl[7]);
         display.setControlShow(modelListControl);
@@ -1707,7 +1782,13 @@ void cInstrumentEditor::showSynthPatchSectionParamValue(bool refreshList)
     }
 
     auto formatter = param.valueFormatter;
-    if (formatter != nullptr)
+    if (twSavedSelected >= 0 && twSavedSelected < static_cast<int>(twSavedNames.size()) &&
+        twIsPresetParam(paramIdx))
+    {
+        snprintf(paramListValues[paramListPos], kMaxSynthListStringLen, "> %s",
+                 twSavedNames[twSavedSelected].c_str());
+    }
+    else if (formatter != nullptr)
     {
         polystrncpy(
           paramListValues[paramListPos], formatter(patch, value).c_str(), kMaxSynthListStringLen);

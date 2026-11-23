@@ -11,6 +11,8 @@
 #include "Synth.h"
 #endif
 #include <map>
+#include <string>
+#include <vector>
 
 enum mtInstrumentEditorMode
 {
@@ -500,6 +502,13 @@ class cInstrumentEditor : public ModuleBase
     int paramValueListPos = 0;
     char* paramValueListTextBuff = nullptr;
     char** paramValueListNames = nullptr;
+
+    // Twisted: your saved patches of this model, listed after the built-in presets in the Preset/Voice list
+    std::vector<std::string> twSavedNames;
+    int twSavedBase = -1;     // list index of the first saved patch (-1: this list has none)
+    int twSavedSelected = -1; // the saved patch picked from the list (-1: a built-in preset)
+    bool twIsPresetParam(int paramIdx);
+    void twLoadSavedFromList(int savedIdx);
 
     void cleanPatchEditorResources();
     bool isMacroSelected() { return sectionListPos >= firstMacroIdx; }
