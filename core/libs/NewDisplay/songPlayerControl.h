@@ -75,6 +75,8 @@ typedef struct
     int16_t loopStart;      // -1 = no loop
     int16_t loopEnd;
     int16_t queuedPos; // -1 = nothing queued
+    // block colours, packed [pattern][track / 2] (low nibble = even track), may be nullptr
+    const uint8_t* blockColours;
 
 } player_data_t;
 

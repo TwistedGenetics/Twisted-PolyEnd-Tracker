@@ -5,12 +5,13 @@
 #include "mtStructs.h"
 
 #include <cr_section_macros.h>
+#include <stddef.h>
 #include <string.h>
 
 namespace
 {
 constexpr char kFileId[4] = { 'T', 'W', 'S', 'G' };
-constexpr uint16_t kFileVersion = 1;
+constexpr uint16_t kFileVersion = 2; // 2: block colours added at the end
 
 struct TwistedSongFile
 {
@@ -36,7 +37,13 @@ struct TwistedSongFile
         uint8_t reserved[3];
         uint32_t ownMask;
     } variation[PATTERN_INDEX_MAX + 1];
+
+    // version 2 and later
+    uint8_t blockColour[PATTERN_INDEX_MAX + 1][kAllTracks / 2];
 };
+
+// a version 1 file is everything up to the block colours
+constexpr size_t kFileSizeV1 = offsetof(TwistedSongFile, blockColour);
 
 __NOINIT(EXTERNAL_RAM) TwistedSongFile songData;
 
@@ -93,14 +100,25 @@ bool TwistedSong::readFile(const char* path)
         return false;
     }
 
+    memset(&songData, 0, sizeof(songData));
     int32_t readSize = fileSystem->readFile(&songData, sizeof(songData), file);
     fileSystem->closeFile(file);
 
-    if (readSize != (int32_t)sizeof(songData) || memcmp(songData.header.id, kFileId, 4) != 0 ||
-        songData.header.version != kFileVersion || songData.header.sectionCount > kMaxSections)
+    bool sizeOk = (songData.header.version == 1 && readSize == (int32_t)kFileSizeV1) ||
+                  (songData.header.version == kFileVersion && readSize == (int32_t)sizeof(songData));
+
+    if (!sizeOk || memcmp(songData.header.id, kFileId, 4) != 0 ||
+        songData.header.sectionCount > kMaxSections)
     {
         reset();
         return false;
+    }
+
+    if (songData.header.version == 1)
+    {
+        // older file: no colours yet, it's saved as version 2 next time
+        memset(songData.blockColour, 0, sizeof(songData.blockColour));
+        songData.header.version = kFileVersion;
     }
 
     for (uint8_t i = 0; i < kMaxSections; i++)
@@ -441,4 +459,79 @@ void TwistedSong::forgetPattern(uint8_t pattern)
     {
         save();
     }
+}
+
+//==================================================================================== block colours
+
+uint8_t TwistedSong::getBlockColour(uint8_t pattern, uint8_t track)
+{
+    if (track >= kAllTracks)
+    {
+        return kNoColour;
+    }
+    uint8_t packed = songData.blockColour[pattern][track / 2];
+    return (track & 1) ? (packed >> 4) : (packed & 0x0F);
+}
+
+bool TwistedSong::setBlockColour(uint8_t pattern, uint8_t track, uint8_t colour)
+{
+    if (track >= kAllTracks || pattern == 0 || colour > kBlockColourCount)
+    {
+        return false;
+    }
+
+    uint8_t& packed = songData.blockColour[pattern][track / 2];
+    uint8_t before = packed;
+    if (track & 1)
+    {
+        packed = (packed & 0x0F) | (colour << 4);
+    }
+    else
+    {
+        packed = (packed & 0xF0) | colour;
+    }
+    return packed != before;
+}
+
+void TwistedSong::copyBlockColours(uint8_t srcPattern, uint8_t srcTrack, uint8_t destPattern,
+                                   uint8_t destTrack, uint8_t tracksNum)
+{
+    bool changed = false;
+    for (uint8_t i = 0; i < tracksNum; i++)
+    {
+        if (srcTrack + i >= kAllTracks || destTrack + i >= kAllTracks)
+        {
+            break;
+        }
+        changed |= setBlockColour(destPattern, destTrack + i, getBlockColour(srcPattern, srcTrack + i));
+    }
+
+    if (changed)
+    {
+        save();
+    }
+}
+
+void TwistedSong::clearBlockColours(uint8_t pattern, uint8_t track, uint8_t tracksNum)
+{
+    bool changed = false;
+    for (uint8_t i = 0; i < tracksNum && track + i < kAllTracks; i++)
+    {
+        changed |= setBlockColour(pattern, track + i, kNoColour);
+    }
+
+    if (changed)
+    {
+        save();
+    }
+}
+
+const uint8_t* TwistedSong::getBlockColourTable()
+{
+    return &songData.blockColour[0][0];
+}
+
+void TwistedSong::saveChanges()
+{
+    save();
 }

@@ -53,6 +53,20 @@ class TwistedSong
     // a pattern stopped existing / was overwritten as a plain pattern
     void forgetPattern(uint8_t pattern);
 
+    //------------------------------------------------ block colours
+    // one colour per track of each pattern: 0 = none, 1..kBlockColourCount
+    static constexpr uint8_t kBlockColourCount = 8;
+    static constexpr uint8_t kNoColour = 0;
+    uint8_t getBlockColour(uint8_t pattern, uint8_t track);
+    // returns true if the colour changed; call saveChanges() after a batch
+    bool setBlockColour(uint8_t pattern, uint8_t track, uint8_t colour);
+    void copyBlockColours(uint8_t srcPattern, uint8_t srcTrack, uint8_t destPattern,
+                          uint8_t destTrack, uint8_t tracksNum);
+    void clearBlockColours(uint8_t pattern, uint8_t track, uint8_t tracksNum);
+    // packed table for the song view: [pattern][track / 2], low nibble = even track
+    const uint8_t* getBlockColourTable();
+    void saveChanges();
+
   private:
     bool readFile(const char* path);
     void writeFile(const char* path);

@@ -13,8 +13,8 @@ that stock firmware ignores.
 ## Opening the tools
 
 In the **Song** screen, press **INSERT** to swap the eight buttons under the
-screen to the song tools. Press **INSERT** again, or **F7 (Back)**, to return to
-the normal song buttons. **SHIFT + INSERT** still jumps to the top of the song.
+screen to the song tools. Press **INSERT** again to return to the normal song
+buttons. **SHIFT + INSERT** still jumps to the top of the song.
 
 The arrows, encoder, PLAY and REC keep working while the tools are showing.
 
@@ -26,7 +26,7 @@ The arrows, encoder, PLAY and REC keep working while the tools are showing.
 | F4 | **Loop Selection** — loop the highlighted slots (press again to stop) | No |
 | F5 | **Clone In Place** — give this slot its own copy of the pattern | Yes |
 | F6 | **Make Variation** — give this slot a linked variation of the pattern | Yes |
-| F7 | **Back** — normal song buttons | No |
+| F7 | **Block Colour** — colour the selected blocks | No |
 | F8 | **Unlink Variation** — make a variation an ordinary pattern | Yes |
 
 Buttons that need edit mode are greyed out until you press **REC**.
@@ -90,6 +90,21 @@ the original pattern is used. The pattern name is copied too.
 Updates happen when the original pattern is saved to the workspace — when you
 switch patterns, go to another screen, or the Tracker autosaves — so a variation
 picks up changes a moment after you leave the original.
+
+## Block colours
+
+Colour-code blocks in the song view with 8 colours (Red, Orange, Yellow, Green,
+Cyan, Blue, Purple, Pink), e.g. drums blue and bass red.
+
+* Select blocks in the grid (SHIFT + arrows), press **F7 (Block Colour)** on the
+  tools page, then **F1–F8** to pick a colour. **DELETE** clears the colour,
+  **INSERT** cancels. In the song list it colours every track of the slot.
+* A colour belongs to a track of a pattern, so every slot playing that pattern
+  shows it.
+* Copying and pasting blocks in the song screen moves the colour with the notes.
+  Clone In Place and Make Variation copy the colours; deleting blocks clears them.
+* Only blocks with notes are coloured; muted tracks show a darker shade.
+* Stored in `patterns/twistedSong` (file version 2; version 1 files still load).
 
 ## Files
 

@@ -164,6 +164,7 @@ class cSongEditor : public ModuleBase
     };
 
     bool toolsPage = false;
+    bool pickingColour = false;
     bool namingSection = false;
     uint8_t namingSectionPos = 0;
     SongLoopMode loopMode = SongLoopMode::off;
@@ -188,6 +189,12 @@ class cSongEditor : public ModuleBase
     void cloneSelectedSlot(bool linked);
     void unlinkSelectedSlot();
     void removeSectionAtSelection();
+
+    // block colours
+    void startColourPicker();
+    void stopColourPicker();
+    void showColourPickerLabels();
+    void applyBlockColour(uint8_t colour); // 0 clears
 
   private:
     uint8_t tapTempoCount = 0;

@@ -75,8 +75,16 @@ static void functToolsLoopSection();
 static void functToolsLoopSelection();
 static void functToolsClone();
 static void functToolsVariation();
-static void functToolsBack();
+static void functToolsBlockColour();
 static void functToolsUnlink();
+static void functPickColour0();
+static void functPickColour1();
+static void functPickColour2();
+static void functPickColour3();
+static void functPickColour4();
+static void functPickColour5();
+static void functPickColour6();
+static void functPickColour7();
 
 static void functKeyboardLeft();
 static void functKeyboardRight();
@@ -214,6 +222,8 @@ void cSongEditor::start(uint32_t options)
 
 void cSongEditor::stop()
 {
+    pickingColour = false;
+
     if (namingSection)
     {
         namingSection = false;
@@ -1019,6 +1029,13 @@ void cSongEditor::refreshEditMode()
         return;
     }
 
+    if (pickingColour)
+    {
+        display.refreshControl(songPlayerControl);
+        display.synchronizeRefresh();
+        return;
+    }
+
     if (toolsPage)
     {
         refreshToolsLabels();
@@ -1798,6 +1815,12 @@ static void functInsert()
         return;
     }
 
+    if (SE->pickingColour)
+    {
+        SE->stopColourPicker();
+        return;
+    }
+
     // INSERT opens / closes the song tools page
     if (SE->toolsPage)
     {
@@ -1814,6 +1837,13 @@ static void functDelete()
 {
     if (SE->isBusy)
     {
+        return;
+    }
+
+    // in the colour picker DELETE clears the colour of the selected blocks
+    if (SE->pickingColour)
+    {
+        SE->applyBlockColour(TwistedSong::kNoColour);
         return;
     }
 
@@ -1895,6 +1925,7 @@ void cSongEditor::showToolsPage()
 void cSongEditor::hideToolsPage()
 {
     toolsPage = false;
+    pickingColour = false;
 
     for (uint8_t i = 0; i < 8; i++)
     {
@@ -1918,7 +1949,7 @@ void cSongEditor::setToolsScreenFunct()
     ip->setButtonObj(interfaceButton3, buttonPress, functToolsLoopSelection);
     ip->setButtonObj(interfaceButton4, buttonPress, functToolsClone);
     ip->setButtonObj(interfaceButton5, buttonPress, functToolsVariation);
-    ip->setButtonObj(interfaceButton6, buttonPress, functToolsBack);
+    ip->setButtonObj(interfaceButton6, buttonPress, functToolsBlockColour);
     ip->setButtonObj(interfaceButton7, buttonPress, functToolsUnlink);
 }
 
@@ -2284,13 +2315,110 @@ static void functToolsVariation()
     SE->cloneSelectedSlot(true);
 }
 
-static void functToolsBack()
+static void functToolsBlockColour()
 {
     if (SE->isBusy)
     {
         return;
     }
-    SE->hideToolsPage();
+    SE->startColourPicker();
+}
+
+static void functPickColour0() { SE->applyBlockColour(1); }
+static void functPickColour1() { SE->applyBlockColour(2); }
+static void functPickColour2() { SE->applyBlockColour(3); }
+static void functPickColour3() { SE->applyBlockColour(4); }
+static void functPickColour4() { SE->applyBlockColour(5); }
+static void functPickColour5() { SE->applyBlockColour(6); }
+static void functPickColour6() { SE->applyBlockColour(7); }
+static void functPickColour7() { SE->applyBlockColour(8); }
+
+//------------------------------------------------------------------------------------- block colours
+
+void cSongEditor::startColourPicker()
+{
+    pickingColour = true;
+
+    ip->clearButtonsRange(interfaceButton0, interfaceButton7);
+    ip->setButtonObj(interfaceButton0, buttonPress, functPickColour0);
+    ip->setButtonObj(interfaceButton1, buttonPress, functPickColour1);
+    ip->setButtonObj(interfaceButton2, buttonPress, functPickColour2);
+    ip->setButtonObj(interfaceButton3, buttonPress, functPickColour3);
+    ip->setButtonObj(interfaceButton4, buttonPress, functPickColour4);
+    ip->setButtonObj(interfaceButton5, buttonPress, functPickColour5);
+    ip->setButtonObj(interfaceButton6, buttonPress, functPickColour6);
+    ip->setButtonObj(interfaceButton7, buttonPress, functPickColour7);
+
+    showColourPickerLabels();
+}
+
+void cSongEditor::stopColourPicker()
+{
+    if (!pickingColour)
+    {
+        return;
+    }
+
+    pickingColour = false;
+    showToolsPage();
+}
+
+// colour the selected blocks: the highlighted blocks in the grid, or the whole slot in the list
+void cSongEditor::applyBlockColour(uint8_t colour)
+{
+    if (isBusy)
+    {
+        return;
+    }
+
+    int16_t firstSlot = selectedSongPosition;
+    int16_t slots = 1;
+    uint8_t firstTrack = 0;
+    uint8_t tracks = kAllTracks;
+
+    if (selectedPlace == 0 && songPlayerData.selection.isActive &&
+        songPlayerData.selection.patternSelectionLength > 0)
+    {
+        firstSlot = songPlayerData.selection.startSongPosition;
+        slots = songPlayerData.selection.patternSelectionLength;
+        firstTrack = songPlayerData.selection.startTrack;
+        tracks = songPlayerData.selection.trackSelectionLength;
+    }
+
+    TwistedSong* ts = newFileManager.getTwistedSong();
+    int changed = 0;
+
+    for (int16_t slot = firstSlot; slot < firstSlot + slots && slot < songLength; slot++)
+    {
+        uint8_t pattern = mtProject.song.playlist[slot];
+        if (pattern == 0 || pattern == PLAYLIST_EMPTY_SLOT)
+        {
+            continue;
+        }
+
+        for (uint8_t track = firstTrack; track < firstTrack + tracks && track < kAllTracks; track++)
+        {
+            if (ts->setBlockColour(pattern, track, colour))
+            {
+                changed++;
+            }
+        }
+    }
+
+    if (changed > 0)
+    {
+        ts->saveChanges();
+    }
+
+    pickingColour = false;
+    showToolsPage();
+    refreshSongPlayerControl();
+
+    static const char* const kNames[9] = { "Colour cleared", "Red",  "Orange", "Yellow", "Green",
+                                           "Cyan",           "Blue", "Purple", "Pink" };
+    char line2[40];
+    snprintf(line2, sizeof(line2), "%d block%s changed", changed, changed == 1 ? "" : "s");
+    showMessage(kNames[colour], line2);
 }
 
 static void functToolsUnlink()

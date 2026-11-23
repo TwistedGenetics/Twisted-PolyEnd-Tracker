@@ -133,6 +133,19 @@
   .grid-mock div.loop { border-left: 3px solid var(--accent); }
   .grid-mock div.divider { border-top: 3px solid var(--accent); }
   .grid-mock div.queued { border-left: 3px solid #1a8a2e; }
+  .blocks-mock { display: grid; grid-template-rows: repeat(6, 1fr); gap: 1mm; }
+  .blocks-mock .row { display: grid; grid-template-columns: repeat(8, 1fr); gap: .6mm; padding-left: 1mm; }
+  .blocks-mock .row.loop { border-left: 3px solid var(--accent); padding-left: calc(1mm - 3px); }
+  .blocks-mock .row.divider { border-top: 3px solid var(--accent); }
+  .blocks-mock span { height: 4mm; background: #e6e6e6; border: 1px solid #999; }
+  .blocks-mock span.e { background: #fff; border-color: #ccc; }
+  .c1 { background: #FF3B30 !important; } .c2 { background: #FF9500 !important; }
+  .c3 { background: #FFE000 !important; } .c4 { background: #34D158 !important; }
+  .c5 { background: #00D4E6 !important; } .c6 { background: #2F7BFF !important; }
+  .c7 { background: #B35CFF !important; } .c8 { background: #FF5FB4 !important; }
+  .labels div.sw { border-width: 1.5px; font-size: 10pt; padding: 2mm .5mm; }
+  .labels div.sw.light { color: #fff; }
+  .swatch { display: inline-block; width: 4mm; height: 4mm; border: 1px solid #555; vertical-align: -0.6mm; margin-right: 1.5mm; }
   .list-mock { font-family: "Courier New", Courier, monospace; font-size: 9.5pt; line-height: 1.55; }
   .list-mock .sel { background: var(--ink); color: #fff; padding: 0 1mm; }
   .labels { display: grid; grid-template-columns: repeat(8, 1fr); gap: 1mm; }
@@ -183,13 +196,13 @@
   <div>
     <div class="kicker">Twisted PolyEnd Tracker · Firmware Manual</div>
     <h1>Twisted<br><span>Song Mode</span></h1>
-    <p class="sub">Named sections, live section looping, selection loops, clone in place and linked pattern variations for the Polyend Tracker+.</p>
+    <p class="sub">Named sections, live section looping, selection loops, clone in place, linked pattern variations and colour-coded blocks for the Polyend Tracker+.</p>
   </div>
   <div class="meta">
     <b>Firmware:</b> Twisted PolyEnd Tracker, based on Polyend Tracker Community Edition 1.0.0<br>
     <b>For:</b> Tracker+ (the original Tracker builds too; the Tracker Mini has no song tools)<br>
     <b>Repository:</b> github.com/TwistedGenetics/Twisted-PolyEnd-Tracker<br>
-    <b>Manual version:</b> 1.0 · November 2026
+    <b>Manual version:</b> 1.1 · November 2026
   </div>
 </div>
 
@@ -205,9 +218,10 @@
     <li><span class="n">6</span> Loop Selection</li>
     <li><span class="n">7</span> Clone in place</li>
     <li><span class="n">8</span> Linked variations</li>
-    <li><span class="n">9</span> Projects, saving and compatibility</li>
-    <li><span class="n">10</span> Messages and troubleshooting</li>
-    <li><span class="n">11</span> Quick reference</li>
+    <li><span class="n">9</span> Block colours</li>
+    <li><span class="n">10</span> Projects, saving and compatibility</li>
+    <li><span class="n">11</span> Messages and troubleshooting</li>
+    <li><span class="n">12</span> Quick reference</li>
   </ol>
 </section>
 
@@ -222,8 +236,9 @@
     <tr><td><b>Loop Selection</b></td><td>Loop any run of slots you highlight.</td></tr>
     <tr><td><b>Clone In Place</b></td><td>Give one slot its own copy of a pattern, so you can change it without changing every other place the pattern is used.</td></tr>
     <tr><td><b>Linked variations</b></td><td>A copy that keeps following the original on every track you haven't changed.</td></tr>
+    <tr><td><b>Block colours</b></td><td>Colour-code the blocks in the song view with 8 colours (drums blue, bass red…). Colours move with blocks you copy.</td></tr>
   </table>
-  <div class="note"><b>Your projects stay safe</b>Sections and variation links are kept in a separate file inside the project. Stock Polyend firmware ignores that file, so it still opens your projects. It just won't show the sections or keep variations linked.</div>
+  <div class="note"><b>Your projects stay safe</b>Sections, variation links and block colours are kept in a separate file inside the project. Stock Polyend firmware ignores that file, so it still opens your projects. It just won't show the sections or colours, or keep variations linked.</div>
 </section>
 
 <!-- ============================================================ 2 -->
@@ -251,13 +266,18 @@
 <!-- ============================================================ 3 -->
 <section>
   <h2>3 · The song tools page</h2>
-  <p>Open the <b>Song</b> screen and press <kbd>Insert</kbd>. The eight labels under the screen change to the song tools. Press <kbd>Insert</kbd> again, or <kbd>F7</kbd> (Back), to return to the normal song buttons.</p>
+  <p>Open the <b>Song</b> screen and press <kbd>Insert</kbd>. The eight labels under the screen change to the song tools. Press <kbd>Insert</kbd> again to return to the normal song buttons.</p>
 
   <div class="screen">
     <div class="title">Song Tools</div>
     <div class="body">
-      <div class="grid-mock">
-        <div></div><div></div><div class="divider loop"></div><div class="loop"></div><div class="loop"></div><div></div>
+      <div class="blocks-mock">
+        <div class="row"><span class="c6"></span><span class="c6"></span><span class="c1"></span><span class="e"></span><span class="c4"></span><span class="e"></span><span class="e"></span><span class="e"></span></div>
+        <div class="row"><span class="c6"></span><span class="c6"></span><span class="c1"></span><span class="e"></span><span class="c4"></span><span class="e"></span><span class="e"></span><span class="e"></span></div>
+        <div class="row divider loop"><span class="c6"></span><span class="c6"></span><span class="c1"></span><span class="c1"></span><span class="c4"></span><span class="c3"></span><span class="e"></span><span class="e"></span></div>
+        <div class="row loop"><span class="c6"></span><span class="c6"></span><span class="c1"></span><span class="c1"></span><span class="c4"></span><span class="c3"></span><span class="e"></span><span class="e"></span></div>
+        <div class="row loop"><span class="c6"></span><span class="c6"></span><span class="c1"></span><span class="c1"></span><span class="e"></span><span class="c3"></span><span class="e"></span><span class="e"></span></div>
+        <div class="row divider"><span class="c6"></span><span class="e"></span><span class="e"></span><span class="e"></span><span class="c4"></span><span class="c3"></span><span class="c7"></span><span class="e"></span></div>
       </div>
       <div class="list-mock">
         01 Intro beat<br>
@@ -275,11 +295,11 @@
       <div>Loop<small>Selection</small></div>
       <div>Clone<small>In Place</small></div>
       <div>Make<small>Variation</small></div>
-      <div>Back</div>
+      <div>Block<small>Colour</small></div>
       <div>Unlink<small>Variation</small></div>
     </div>
   </div>
-  <p class="caption">The tools page with REC on and a section loop running. The red line on the left of the blocks is a section divider. The red bar down the edge marks the looped slots.</p>
+  <p class="caption">The tools page with REC on and a section loop running. Drums are coloured blue, bass red. The red lines across the blocks are section dividers; the red bar down the edge marks the looped slots. (The real screen is dark; the colours look the same.)</p>
 
   <table>
     <tr><th>Key</th><th>Tool</th><th>Needs REC</th></tr>
@@ -289,7 +309,7 @@
     <tr><td class="key">F4</td><td><b>Loop Selection.</b> Loop the highlighted slots. Press again to stop.</td><td>No</td></tr>
     <tr><td class="key">F5</td><td><b>Clone In Place.</b> Give this slot its own copy of the pattern.</td><td class="yes">Yes</td></tr>
     <tr><td class="key">F6</td><td><b>Make Variation.</b> Give this slot a linked copy of the pattern.</td><td class="yes">Yes</td></tr>
-    <tr><td class="key">F7</td><td><b>Back.</b> Return to the normal song buttons.</td><td>No</td></tr>
+    <tr><td class="key">F7</td><td><b>Block Colour.</b> Colour the selected blocks (see section 9).</td><td>No</td></tr>
     <tr><td class="key">F8</td><td><b>Unlink Variation.</b> Turn a variation into an ordinary pattern.</td><td class="yes">Yes</td></tr>
   </table>
   <ul>
@@ -445,27 +465,81 @@
   <div class="note"><b>Example</b>Make three variations of your main jungle break for verse 2, verse 3 and the outro. Change only the snare track in each one. If you then tweak the kick or hats in the original, all three variations get the new kick and hats, but each keeps its own snare.</div>
 </section>
 
-<!-- ============================================================ 9 -->
+<!-- ============================================================ 9 colours -->
 <section>
-  <h2>9 · Projects, saving and compatibility</h2>
+  <h2>9 · Block colours</h2>
+  <p>Colour-code the blocks in the song view so you can see what's what at a glance: for example drums blue, bass red, pads purple. Colours are only a visual tag; they never change the sound.</p>
+
+  <h3>Colour some blocks</h3>
+  <ol class="steps">
+    <li>In the block grid on the left, select the blocks: hold <kbd>Shift</kbd> and use the arrows to cover the slots and tracks you want. To colour a whole column (a track all through the song), select from the first slot to the last.</li>
+    <li>Press <kbd>Insert</kbd> for the tools, then <kbd>F7</kbd> (Block Colour).</li>
+    <li>The eight buttons turn into the colours. Press the one you want.</li>
+  </ol>
+
+  <div class="screen">
+    <div class="title">Block Colour:  DELETE clears,  INSERT cancels</div>
+    <div class="labels">
+      <div class="sw c1">Red</div>
+      <div class="sw c2">Orange</div>
+      <div class="sw c3">Yellow</div>
+      <div class="sw c4">Green</div>
+      <div class="sw c5">Cyan</div>
+      <div class="sw c6 light">Blue</div>
+      <div class="sw c7 light">Purple</div>
+      <div class="sw c8">Pink</div>
+    </div>
+  </div>
+  <p class="caption">The colour picker: F1 to F8 are the colours. Each name is printed on its own colour, in big, high-contrast text.</p>
+
   <ul>
-    <li>Sections and variation links are saved in the file <code>patterns/twistedSong</code> inside each project, next to the pattern files.</li>
-    <li>They're saved and opened with the project as usual. You don't need to do anything extra.</li>
-    <li>A new or older project with no <code>twistedSong</code> file simply starts with no sections and no variations.</li>
+    <li>A message confirms the colour and how many blocks changed, and the tools come back.</li>
+    <li><kbd>Delete</kbd> in the picker removes the colour from the selected blocks. <kbd>Insert</kbd> closes the picker without changing anything.</li>
+    <li>If you're in the song list instead of the grid, the colour goes on every track of the selected slot.</li>
+    <li>Colouring doesn't need REC, so you can do it while the song plays.</li>
   </ul>
-  <h3>Opening a project on stock firmware</h3>
-  <p>Stock firmware ignores <code>twistedSong</code>, so the project opens and plays normally.</p>
+
+  <h3>How colours behave</h3>
   <ul>
-    <li>Sections aren't shown.</li>
-    <li>Variations play as ordinary patterns with the notes they had when last saved.</li>
-    <li>Edits made on stock firmware don't update variations. When you're back on Twisted firmware, the links resume from the next time an original is saved.</li>
+    <li><b>A colour belongs to the track of the pattern</b>, not to the slot. If pattern 4 plays in five slots, colouring its drum track in one slot colours it in all five, because it's the same pattern.</li>
+    <li><b>Copy a block and the colour moves with it.</b> Copying and pasting blocks in the song screen copies the colour along with the notes, onto whichever track you paste to.</li>
+    <li>Clone In Place and Make Variation copy all the colours to the new pattern.</li>
+    <li>Deleting blocks in the song screen removes their colour along with the notes.</li>
+    <li>Only blocks with notes show a colour. A muted track shows a darker version of its colour.</li>
   </ul>
-  <div class="note"><b>Sharing projects</b>Anyone on stock firmware can open your projects; they just won't see the sections or keep variations linked.</div>
+
+  <h3>The eight colours</h3>
+  <table>
+    <tr><th>Key</th><th>Colour</th><th>Key</th><th>Colour</th></tr>
+    <tr><td class="key">F1</td><td><span class="swatch c1"></span>Red</td><td class="key">F5</td><td><span class="swatch c5"></span>Cyan</td></tr>
+    <tr><td class="key">F2</td><td><span class="swatch c2"></span>Orange</td><td class="key">F6</td><td><span class="swatch c6"></span>Blue</td></tr>
+    <tr><td class="key">F3</td><td><span class="swatch c3"></span>Yellow</td><td class="key">F7</td><td><span class="swatch c7"></span>Purple</td></tr>
+    <tr><td class="key">F4</td><td><span class="swatch c4"></span>Green</td><td class="key">F8</td><td><span class="swatch c8"></span>Pink</td></tr>
+  </table>
+  <div class="note"><b>Tip</b>Pick a scheme and stick to it in every project, for example blue drums, red bass, orange breaks, purple pads, yellow FX, green leads. A long song then reads like a map.</div>
 </section>
 
 <!-- ============================================================ 10 -->
 <section>
-  <h2>10 · Messages and troubleshooting</h2>
+  <h2>10 · Projects, saving and compatibility</h2>
+  <ul>
+    <li>Sections, variation links and block colours are saved in the file <code>patterns/twistedSong</code> inside each project, next to the pattern files.</li>
+    <li>They're saved and opened with the project as usual. You don't need to do anything extra.</li>
+    <li>A new or older project with no <code>twistedSong</code> file simply starts with no sections, variations or colours. Projects saved before block colours existed open fine and gain colours the next time they're saved.</li>
+  </ul>
+  <h3>Opening a project on stock firmware</h3>
+  <p>Stock firmware ignores <code>twistedSong</code>, so the project opens and plays normally.</p>
+  <ul>
+    <li>Sections and block colours aren't shown.</li>
+    <li>Variations play as ordinary patterns with the notes they had when last saved.</li>
+    <li>Edits made on stock firmware don't update variations. When you're back on Twisted firmware, the links resume from the next time an original is saved.</li>
+  </ul>
+  <div class="note"><b>Sharing projects</b>Anyone on stock firmware can open your projects; they just won't see the sections or colours, or keep variations linked.</div>
+</section>
+
+<!-- ============================================================ 10 -->
+<section>
+  <h2>11 · Messages and troubleshooting</h2>
   <table>
     <tr><th>Message or problem</th><th>Meaning / what to do</th></tr>
     <tr><td><b>Press REC to edit the song</b></td><td>That tool changes the song. Turn on edit mode with <kbd>Rec</kbd> first.</td></tr>
@@ -476,6 +550,8 @@
     <tr><td>The loop stopped by itself</td><td>You added or deleted a slot. Turn the loop on again.</td></tr>
     <tr><td>The selection won't move while playing</td><td>Live selection only works with Loop Section on, or with REC on.</td></tr>
     <tr><td>A variation didn't update</td><td>The original hasn't been saved yet. Switch pattern or screen, then check again. If you changed that track in the variation, it no longer follows by design.</td></tr>
+    <tr><td>A block I coloured shows no colour</td><td>Only blocks with notes are coloured. Add notes to that track and the colour appears.</td></tr>
+    <tr><td>Colouring one slot coloured others too</td><td>Those slots play the same pattern. Use Clone In Place (<kbd>F5</kbd>) first to give the slot its own pattern.</td></tr>
     <tr><td>Insert doesn't open the tools</td><td>Check that you're running the Twisted firmware and are on the Song screen. The Tracker Mini has no song tools.</td></tr>
   </table>
   <p>Found a bug? Open an issue on the repository with the steps that cause it.</p>
@@ -483,7 +559,7 @@
 
 <!-- ============================================================ 11 -->
 <section>
-  <h2>11 · Quick reference</h2>
+  <h2>12 · Quick reference</h2>
   <table>
     <tr><th>Do this</th><th>Press</th></tr>
     <tr><td>Open / close song tools</td><td><kbd>Insert</kbd> on the Song screen</td></tr>
@@ -495,13 +571,16 @@
     <tr><td>Separate copy for one slot</td><td><kbd>Rec</kbd>, select slot, <kbd>F5</kbd></td></tr>
     <tr><td>Linked variation for one slot</td><td><kbd>Rec</kbd>, select slot, <kbd>F6</kbd></td></tr>
     <tr><td>Unlink a variation</td><td><kbd>Rec</kbd>, select slot, <kbd>F8</kbd></td></tr>
-    <tr><td>Back to normal song buttons</td><td><kbd>F7</kbd> or <kbd>Insert</kbd></td></tr>
+    <tr><td>Colour blocks</td><td>Select blocks, <kbd>Insert</kbd>, <kbd>F7</kbd>, pick <kbd>F1</kbd>–<kbd>F8</kbd></td></tr>
+    <tr><td>Remove colour</td><td>Select blocks, <kbd>Insert</kbd>, <kbd>F7</kbd>, <kbd>Delete</kbd></td></tr>
+    <tr><td>Back to normal song buttons</td><td><kbd>Insert</kbd></td></tr>
   </table>
 
   <h3>Song view marks</h3>
   <table>
     <tr><th>Mark</th><th>Means</th></tr>
     <tr><td>Red line across the blocks</td><td>A section starts here</td></tr>
+    <tr><td>Coloured block</td><td>Your block colour (darker = muted track)</td></tr>
     <tr><td>Red bar on the left edge</td><td>Slot is in the active loop</td></tr>
     <tr><td>Green bar on the left edge</td><td>Queued jump: playback goes here next</td></tr>
     <tr><td><code>NAME:</code> before a pattern name</td><td>First slot of a section</td></tr>

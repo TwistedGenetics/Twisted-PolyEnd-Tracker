@@ -706,6 +706,25 @@ void cSongPlayer::drawTrackNames()
     }
 }
 
+// the 8 block colours (index 1..8), bright enough to read on the dark song view
+extern const uint32_t kTwistedBlockColours[9];
+const uint32_t kTwistedBlockColours[9] = {
+    0x000000, // none
+    0xFF3B30, // red
+    0xFF9500, // orange
+    0xFFE000, // yellow
+    0x34D158, // green
+    0x00D4E6, // cyan
+    0x2F7BFF, // blue
+    0xB35CFF, // purple
+    0xFF5FB4, // pink
+};
+
+static inline uint32_t dimColour(uint32_t c)
+{
+    return ((c >> 1) & 0x7F7F7F) - ((c >> 3) & 0x1F1F1F);
+}
+
 void cSongPlayer::fillBlocks()
 {
     API_LINE_WIDTH(kRedFrameWidth);
@@ -720,9 +739,10 @@ void cSongPlayer::fillBlocks()
 
     for (int pattern = 0; pattern < maxPatternsVisible; pattern++)
     {
+        uint8_t patternIdx = controlData->songData[textListPos + pattern];
         uint16_t data =
-          controlData->normalPatternsBitmask[controlData->songData[textListPos + pattern] - 1] |
-          controlData->midiPatternsBitmask[controlData->songData[textListPos + pattern] - 1] << 8;
+          controlData->normalPatternsBitmask[patternIdx - 1] |
+          controlData->midiPatternsBitmask[patternIdx - 1] << 8;
         uint16_t localY = posY + pattern * (BLOCK_HEIGHT + BLOCK_SPACING) + 64;
 
         for (int track = 0; track < allTracksCount; track++)
@@ -737,9 +757,27 @@ void cSongPlayer::fillBlocks()
             }
             else
             {
-                if (track < controlData->normalTracksCount
-                      ? controlData->normalTracksMute[track]
-                      : controlData->midiTracksMute[track - controlData->normalTracksCount])
+                bool muted = track < controlData->normalTracksCount
+                               ? controlData->normalTracksMute[track]
+                               : controlData->midiTracksMute[track - controlData->normalTracksCount];
+
+                uint8_t colour = 0;
+                if (controlData->blockColours != nullptr && track < kAllTracks)
+                {
+                    uint8_t packed = controlData->blockColours[patternIdx * (kAllTracks / 2) + track / 2];
+                    colour = (track & 1) ? (packed >> 4) : (packed & 0x0F);
+                    if (colour > 8)
+                    {
+                        colour = 0;
+                    }
+                }
+
+                if (colour != 0)
+                {
+                    API_COLOR(muted ? dimColour(kTwistedBlockColours[colour])
+                                    : kTwistedBlockColours[colour]);
+                }
+                else if (muted)
                 {
                     API_COLOR(colors[7]);
                 }

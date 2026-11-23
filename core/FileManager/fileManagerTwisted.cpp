@@ -123,6 +123,9 @@ bool cFileManager::clonePatternFile(uint8_t srcPatternIdx, uint8_t destPatternId
     }
     patternsMetadata.setPatternName(destPatternIdx, name);
 
+    // and the block colours
+    twistedSong.copyBlockColours(srcPatternIdx, 0, destPatternIdx, 0, kAllTracks);
+
     mtProject.values.projectNotSavedFlag |= 1;
     changesFlags.project = 1;
 

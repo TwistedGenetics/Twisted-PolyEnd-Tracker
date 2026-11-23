@@ -264,6 +264,9 @@ void cFileManager::copySongTracks(char* currentProjectPath,
 
     writePatternFile(currentPath, destPattern);
     onPatternFileWritten(destPaternIdx);
+
+    // block colours travel with the copied tracks
+    twistedSong.copyBlockColours(srcPatternIdx, trackStartSrc, destPaternIdx, trackStartDest, tracksNum);
 }
 
 void cFileManager::deleteTracks(char* currentProjectPath,
@@ -298,6 +301,9 @@ void cFileManager::deleteTracks(char* currentProjectPath,
 
         writePatternFile(currentPath, srcPattern);
         onPatternFileWritten(srcPatternIdx);
+
+        // an emptied block loses its colour
+        twistedSong.clearBlockColours(srcPatternIdx, trackStartSrc, tracksNum);
     }
 }
 

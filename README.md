@@ -1,6 +1,6 @@
 # Polyend Tracker Community Edition (CE)
 
-> **Twisted fork:** this fork adds Paula's Revenge style song mode tools to the Tracker+ (named sections, section and selection loops with live jumping, clone in place, linked pattern variations). Download the firmware and the [user manual (PDF)](docs/Twisted_Song_Mode_Manual.pdf) from [Releases](https://github.com/TwistedGenetics/Twisted-PolyEnd-Tracker/releases/latest), or read [`TWISTED_SONG_MODE.md`](TWISTED_SONG_MODE.md).
+> **Twisted fork:** this fork adds Paula's Revenge style song mode tools to the Tracker+ (named sections, section and selection loops with live jumping, clone in place, linked pattern variations, colour-coded blocks). Download the firmware and the [user manual (PDF)](docs/Twisted_Song_Mode_Manual.pdf) from [Releases](https://github.com/TwistedGenetics/Twisted-PolyEnd-Tracker/releases/latest), or read [`TWISTED_SONG_MODE.md`](TWISTED_SONG_MODE.md).
 
 Welcome to the **Polyend Tracker Community Edition** repository!
 

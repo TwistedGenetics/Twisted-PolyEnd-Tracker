@@ -115,7 +115,7 @@ void cSongEditor::initDisplayControls()
 
 void cSongEditor::refreshTempoField()
 {
-    if (toolsPage || namingSection)
+    if (toolsPage || namingSection || pickingColour)
     {
         return;
     }
@@ -510,6 +510,7 @@ void cSongEditor::refreshSongMarks()
     }
 
     songPlayerData.sectionStarts = sectionStartFlags;
+    songPlayerData.blockColours = ts->getBlockColourTable();
     songPlayerData.loopStart = (loopMode != SongLoopMode::off) ? newFileManager.getSongLoopStart() : -1;
     songPlayerData.loopEnd = (loopMode != SongLoopMode::off) ? newFileManager.getSongLoopEnd() : -1;
     songPlayerData.queuedPos = newFileManager.getQueuedSongJump();
@@ -518,9 +519,9 @@ void cSongEditor::refreshSongMarks()
 void cSongEditor::refreshToolsLabels()
 {
     static const char* const kText1[8] = { "Section", "Section", "Loop",  "Loop",
-                                           "Clone",   "Make",    "Back",  "Unlink" };
+                                           "Clone",   "Make",    "Block", "Unlink" };
     static const char* const kText2[8] = { "Name",     "Remove",    "Section", "Selection",
-                                           "In Place", "Variation", "",        "Variation" };
+                                           "In Place", "Variation", "Colour",  "Variation" };
     // the ones that change the song need edit (REC) mode
     static const bool kNeedsEdit[8] = { true, true, false, false, true, true, false, true };
 
@@ -621,5 +622,46 @@ void cSongEditor::showSectionKeyboard()
     mtPopups.hideInfoPopup();
     messageVisible = false;
 
+    display.synchronizeRefresh();
+}
+
+//--------------------------------------------------------------------------------------- block colour picker
+
+extern const uint32_t kTwistedBlockColours[9];
+
+void cSongEditor::showColourPickerLabels()
+{
+    static const char* const kNames[8] = { "Red",  "Orange", "Yellow", "Green",
+                                           "Cyan", "Blue",   "Purple", "Pink" };
+    // label colours: text, background, frame, second line - dark text on the bright ones,
+    // white on blue and purple, so every name stays easy to read
+    static uint32_t pickerColours[8][4];
+
+    const uint32_t* theme = display.getTheme().activeButtonLabelsColors;
+
+    display.setControlPosition(label[5], (800 / 8) * 5 + (800 / 16), -1);
+    display.setControlPosition(label[6], (800 / 8) * 6 + (800 / 16), -1);
+    display.setRemoveControlStyle(label[5], controlStyleShowBitmap);
+    display.setControlData(label[5], &labelDataRed);
+
+    for (uint8_t i = 0; i < 8; i++)
+    {
+        uint32_t c = kTwistedBlockColours[i + 1];
+        uint32_t text = (i == 5 || i == 6) ? 0xFFFFFF : 0x000000;
+
+        pickerColours[i][0] = text;
+        pickerColours[i][1] = c;
+        pickerColours[i][2] = theme[2];
+        pickerColours[i][3] = text;
+
+        display.setControlText(label[i], kNames[i]);
+        display.setControlText2(label[i], "");
+        display.setControlValue(label[i], 0);
+        display.setControlColors(label[i], pickerColours[i]);
+        display.setControlShow(label[i]);
+        display.refreshControl(label[i]);
+    }
+
+    titleBar->setTitle("Block Colour:  DELETE clears,  INSERT cancels");
     display.synchronizeRefresh();
 }
