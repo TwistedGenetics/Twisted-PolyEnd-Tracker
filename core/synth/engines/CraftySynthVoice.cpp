@@ -747,7 +747,11 @@ class CraftySynthVoice : public sdk::CustomSynthVoice<CraftySynthVoice, CraftyPa
             giveInstance(in);
     }
 
-    bool isActive() final { return in != nullptr && cr_synth_sounding(&in->syn); }
+    // Twisted: sounding while a note's amp envelope runs, then until the output (tails, drones) has been
+    // silent for 2 s. CRAFTY's own test also counted any patch with AMP EG off full (two factory presets,
+    // older random patches) as sounding for ever, so it was rendered -- the whole engine and its effects --
+    // all the time, even with nothing playing.
+    bool isActive() final { return in != nullptr && (in->syn.env[1].st != 0u || quietBlocks < kQuietBlocks); }
 
     void onMidiEvent(const InstrumentVoiceContext& ctx, const MidiEvent& event) override
     {
@@ -780,6 +784,7 @@ class CraftySynthVoice : public sdk::CustomSynthVoice<CraftySynthVoice, CraftyPa
         if (in == nullptr || suppress)
             return;
         const int v = std::clamp(static_cast<int>(std::lround(velocity * 127.0f)), 1, 127);
+        quietBlocks = 0;
         cr_inst_note(in, note, static_cast<uint32_t>(v));
     }
 
@@ -798,14 +803,31 @@ class CraftySynthVoice : public sdk::CustomSynthVoice<CraftySynthVoice, CraftyPa
             std::fill(outR.begin(), outR.end(), 0.0f);
             return;
         }
+        if (!isActive()) // silent: nothing to work out
+        {
+            std::fill(outL.begin(), outL.end(), 0.0f);
+            std::fill(outR.begin(), outR.end(), 0.0f);
+            return;
+        }
         cr_inst_transport(in, -1.0, ctx.tempo > 1.0f ? ctx.tempo : 120.0f, 0);
         float lr[2 * CR_INST_FRAMES];
         const uint32_t n = std::min<uint32_t>(static_cast<uint32_t>(outL.size()), CR_INST_FRAMES);
         cr_inst_render(in, lr, n);
+        float peak = 0.0f;
         for (uint32_t i = 0; i < n; i++)
         {
             outL[i] = lr[2 * i];
             outR[i] = lr[2 * i + 1];
+            peak = std::max(peak, std::max(std::fabs(lr[2 * i]), std::fabs(lr[2 * i + 1])));
+        }
+        if (in->syn.env[1].st == 0u && peak < 3.0e-5f) // about -90 dB
+        {
+            if (quietBlocks < kQuietBlocks)
+                quietBlocks++;
+        }
+        else
+        {
+            quietBlocks = 0;
         }
     }
 
@@ -839,6 +861,8 @@ class CraftySynthVoice : public sdk::CustomSynthVoice<CraftySynthVoice, CraftyPa
     cr_inst_t* in = nullptr;
     int poolIdx = -1;
     int preset = 0;
+    static constexpr int kQuietBlocks = 690; // 2 s of 128 samples
+    int quietBlocks = 0;
     float knob[CR_NP];
     bool suppress = false;
 

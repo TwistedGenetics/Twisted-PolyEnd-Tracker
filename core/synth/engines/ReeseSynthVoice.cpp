@@ -280,6 +280,12 @@ class ReeseSynthVoice : public sdk::CustomSynthVoice<ReeseSynthVoice, ReeseParam
     {
         auto out = outputBuffer[0];
         auto outR = outputBuffer[1];
+        if (!isActive()) // Twisted: silent: nothing to work out
+        {
+            std::fill(out.begin(), out.end(), 0.0f);
+            std::fill(outR.begin(), outR.end(), 0.0f);
+            return;
+        }
         bpm = ctx.tempo > 1.0f ? ctx.tempo : 120.0f;
 
         size_t i = 0;

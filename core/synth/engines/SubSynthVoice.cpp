@@ -202,6 +202,11 @@ class SubSynthVoice : public PresetVoice<SubSynthVoice, SubParamId>
                           std::span<AudioBufferRef>) final
     {
         auto out = outputBuffer[0];
+        if (!isActive()) // Twisted: silent: nothing to work out
+        {
+            std::fill(out.begin(), out.end(), 0.0f);
+            return;
+        }
         size_t i = 0;
         while (i < out.size())
         {
