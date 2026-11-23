@@ -194,6 +194,9 @@ Code: `core/FileManager/fileManagerBrowse.cpp`, `platforms/*/SD.cpp`
 - After a folder (or 499-file group) is scanned, `saveBrowseIndex` writes `/.TwistedIndex/<path hash>_<offset>.idx`
   (hidden): the signature, the sample settings, the path, and each usable file's name and memory size. Next time
   `loadBrowseIndex` takes it when the signature matches, so no sample file is opened.
+- Folder lists too (v1.9.0): a quick listing without sub-folder counting gives the signature (sub-folder names and
+  dates); `/.TwistedIndex/<path hash>_d<filter>.idx` holds the counted, split list. A sub-folder that fills the list
+  without having been split (or a split group that comes up empty) drops its parent's index so it recounts.
 
 ## Files
 

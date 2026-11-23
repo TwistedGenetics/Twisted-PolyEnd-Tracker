@@ -202,7 +202,7 @@
     <b>Firmware:</b> Twisted PolyEnd Tracker, based on Polyend Tracker Community Edition 1.0.0<br>
     <b>For:</b> Tracker+ (the original Tracker builds too; the Tracker Mini has no song tools)<br>
     <b>Repository:</b> github.com/TwistedGenetics/Twisted-PolyEnd-Tracker<br>
-    <b>Manual version:</b> 2.0 · November 2026
+    <b>Manual version:</b> 2.1 · November 2026
   </div>
 </div>
 
@@ -671,6 +671,7 @@
   <p>The first time you open a folder, the Tracker checks every sample in it as before. It then saves what it found (which files are usable and how much memory each needs) in a small index on the SD card. The next time you open that folder, the list appears at once: no sample is opened.</p>
   <ul>
     <li>The index notices changes by itself. Add, remove, rename or replace a sample, and that folder is checked again once, then indexed again.</li>
+    <li>Folder lists are indexed too: the Tracker no longer counts the samples inside every sub-folder each time, so a folder full of sub-folders opens at once as well. Adding or renaming a sub-folder updates it. If you add so many samples to a sub-folder that it now needs splitting into groups of 499, open that sub-folder once; the next time you open the folder above it, it shows the groups.</li>
     <li>The indexes live in a hidden folder, <code>/.TwistedIndex</code>, at the top of the SD card. It's safe to delete; folders are simply checked again the next time you open them.</li>
   </ul>
   <div class="note"><b>Tips for the fastest browsing</b>Keep each folder under 499 samples. Sort samples into folders (Breaks, Bass, FX…) rather than one huge folder. A fast, freshly formatted SD card helps too.</div>

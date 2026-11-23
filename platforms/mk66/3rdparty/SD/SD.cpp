@@ -749,7 +749,7 @@ uint16_t SdDir::createFilesList(uint16_t start_line,
         list[n] = new (std::nothrow) char[len];
         if (list[n] == nullptr) // Twisted: out of heap - stop listing instead of crashing
             break;
-        if (signature != nullptr && !(fno.fattrib & AM_DIR))
+        if (signature != nullptr)
         {
             for (const char* c = fno.fname; *c; c++)
                 hash = (hash ^ static_cast<uint8_t>(*c)) * 16777619u;

@@ -76,6 +76,13 @@ void parseFolderName(const char* input, char* name, uint16_t* offset)
     }
 }
 
+static bool isSplitGroupName(const char* name)
+{
+    const char* start = strrchr(name, '(');
+    int a, b;
+    return start != nullptr && sscanf(start, "(%d-%d)", &a, &b) == 2;
+}
+
 bool cFileManager::browseSdCard(uint16_t* index)
 {
     if (status != fmIdle && status != fmSavingProjectToWorkspace)
@@ -102,6 +109,7 @@ bool cFileManager::browseSdCard(uint16_t* index)
     {
         explorerDirLevel = 1;
 
+        enteredSplitGroup = isSplitGroupName(explorerList[*index]);
         parseFolderName(explorerList[*index], explorerCurrentPath, &explorerCurrentOffset);
         explorerPositionTable[explorerCurrentPosition] = *index;
         explorerCurrentPosition++;
@@ -118,6 +126,7 @@ bool cFileManager::browseSdCard(uint16_t* index)
 
                 explorerPositionTable[explorerCurrentPosition] = *index;
                 explorerCurrentPosition++;
+                enteredSplitGroup = isSplitGroupName(explorerList[*index]);
                 parseFolderName(explorerList[*index],
                                 explorerCurrentPath + strlen(explorerCurrentPath),
                                 &explorerCurrentOffset);
@@ -140,6 +149,7 @@ bool cFileManager::browseSdCard(uint16_t* index)
             explorerCurrentPosition--;
             *index = explorerPositionTable[explorerCurrentPosition];
             explorerCurrentOffset = 0;
+            enteredSplitGroup = false;
         }
     }
 
@@ -205,6 +215,9 @@ void cFileManager::listOnlyFolderNames()
         case fmBrowseFirmwares: folderSizeFilter = FileSystem::enListFileFilter_firmware; break;
     }
 
+    // Twisted: a quick listing first (no counting inside the sub-folders) gives the folder's signature;
+    // if its index matches, the saved list (with big folders already split) is used as it is
+    uint32_t sig = 0;
     allFoldersNum = fileSystem->createFilesList(explorerCurrentPath,
                                                 parentFolder,
                                                 explorerList,
@@ -212,8 +225,31 @@ void cFileManager::listOnlyFolderNames()
                                                 8000,
                                                 FileSystem::enListFileFilter_folder,
                                                 0,
-                                                explorer_list_max - 1,
-                                                folderSizeFilter);
+                                                0,
+                                                folderSizeFilter,
+                                                &sig);
+    int fromIndex = 0;
+    if (allFoldersNum >= parentFolder && sig != 0 &&
+        loadFolderIndex(sig, static_cast<int>(folderSizeFilter), parentFolder, &fromIndex))
+    {
+        allFoldersNum = fromIndex;
+    }
+    else
+    {
+        allFoldersNum = fileSystem->createFilesList(explorerCurrentPath,
+                                                    parentFolder,
+                                                    explorerList,
+                                                    explorer_list_max,
+                                                    8000,
+                                                    FileSystem::enListFileFilter_folder,
+                                                    0,
+                                                    explorer_list_max - 1,
+                                                    folderSizeFilter);
+        if (allFoldersNum >= parentFolder && sig != 0)
+        {
+            saveFolderIndex(sig, static_cast<int>(folderSizeFilter), parentFolder, allFoldersNum);
+        }
+    }
 
     if (allFoldersNum < parentFolder) // kListError
     {
@@ -271,6 +307,29 @@ void cFileManager::listOnlyWavFromActualPath()
                                       0,
                                       FileSystem::enListFileFilter_all,
                                       &browseSignature);
+
+        // Twisted: the parent's saved counts are out of date when this folder now fills the list but wasn't
+        // split, or a split group of it came up empty - drop that index so the parent recounts next time
+        const bool grewPastSplit = !enteredSplitGroup && filesFound > 0 && explorerListLength + filesFound >= explorer_list_max;
+        const bool shrankBelowSplit = enteredSplitGroup && filesFound <= 0;
+        if ((grewPastSplit || shrankBelowSplit) && explorerDirLevel > 0)
+        {
+            char parent[256];
+            strncpy(parent, explorerCurrentPath, sizeof(parent) - 1);
+            parent[sizeof(parent) - 1] = 0;
+            char* slash = strrchr(parent, '/');
+            if (slash != nullptr)
+            {
+                if (slash == parent)
+                    parent[1] = 0;
+                else
+                    *slash = 0;
+                char idx[64];
+                folderIndexPath(parent, static_cast<int>(FileSystem::enListFileFilter_wave), idx, sizeof(idx));
+                if (fileSystem->exists(idx))
+                    fileSystem->remove(idx);
+            }
+        }
 
         if (filesFound <= 0) // nie ma plikow wav w folderze (lub blad) - koncz listowanie
         {
@@ -765,4 +824,126 @@ void cFileManager::createPatchesFolder()
     {
         fileSystem->mkdir(0, cDefaultPatchesPath);
     }
+}
+
+//====================================================================================================
+// Twisted: the sub-folder list index - "TWFX", version, the quick listing's signature (the sub-folders'
+// names and dates), the filter the counts were made with, the path, then each entry as listed (big
+// folders already split into their "(1-499)" groups). Saves counting the files in every sub-folder.
+//====================================================================================================
+void cFileManager::folderIndexPath(const char* folder, int filter, char* out, size_t outSize)
+{
+    uint32_t h = 2166136261u;
+    for (const char* c = folder; *c; c++)
+        h = (h ^ static_cast<uint8_t>(*c)) * 16777619u;
+    snprintf(out, outSize, "%s/%08lX_d%d.idx", kBrowseIndexDir, static_cast<unsigned long>(h), filter);
+}
+
+bool cFileManager::loadFolderIndex(uint32_t sig, int filter, uint8_t first, int* countOut)
+{
+    char path[64];
+    folderIndexPath(explorerCurrentPath, filter, path, sizeof(path));
+    if (!fileSystem->exists(path))
+        return false;
+    auto [isOpen, fh] = fileSystem->openFile(path, FileSystem::FileOpenMode::kRead);
+    if (!isOpen)
+        return false;
+
+    bool ok = false;
+    uint8_t head[13];
+    char storedPath[256];
+    char* names[explorer_list_max] = {};
+    int count = 0;
+    do
+    {
+        if (fileSystem->readFile(head, 13, fh) != 13 || memcmp(head, "TWFX", 4) != 0 ||
+            head[4] != kBrowseIndexVersion)
+            break;
+        uint32_t s;
+        uint16_t n;
+        memcpy(&s, head + 5, 4);
+        memcpy(&n, head + 10, 2);
+        const uint8_t pathLen = head[12];
+        if (s != sig || head[9] != static_cast<uint8_t>(filter) || first + n > explorer_list_max)
+            break;
+        if (fileSystem->readFile(storedPath, pathLen, fh) != pathLen)
+            break;
+        storedPath[pathLen] = 0;
+        if (strcmp(storedPath, explorerCurrentPath) != 0)
+            break;
+        ok = true;
+        for (int i = 0; i < n; i++)
+        {
+            uint8_t len;
+            if (fileSystem->readFile(&len, 1, fh) != 1 || len == 0 ||
+                (names[i] = new (std::nothrow) char[len + 1]) == nullptr ||
+                fileSystem->readFile(names[i], len, fh) != len)
+            {
+                ok = false;
+                break;
+            }
+            names[i][len] = 0;
+            count = i + 1;
+        }
+    } while (false);
+    fileSystem->closeFile(fh);
+
+    if (!ok)
+    {
+        for (int i = 0; i < explorer_list_max; i++)
+            delete[] names[i];
+        return false;
+    }
+
+    // the saved entries replace the quick listing's
+    for (int i = first; i < explorer_list_max; i++)
+    {
+        if (explorerList[i] != nullptr)
+        {
+            delete explorerList[i];
+            explorerList[i] = nullptr;
+        }
+    }
+    for (int i = 0; i < count; i++)
+        explorerList[first + i] = names[i];
+    *countOut = first + count;
+    return true;
+}
+
+void cFileManager::saveFolderIndex(uint32_t sig, int filter, uint8_t first, int count)
+{
+    if (!fileSystem->exists(kBrowseIndexDir))
+        fileSystem->mkdir(1, kBrowseIndexDir); // hidden
+
+    char path[64];
+    folderIndexPath(explorerCurrentPath, filter, path, sizeof(path));
+    auto [isOpen, fh] = fileSystem->openFile(path, FileSystem::FileOpenMode::kWriteCreateNew);
+    if (!isOpen)
+        return;
+
+    const size_t pathLen = std::min<size_t>(strlen(explorerCurrentPath), 255);
+    const uint16_t n = static_cast<uint16_t>(count - first);
+    uint8_t head[13];
+    memcpy(head, "TWFX", 4);
+    head[4] = kBrowseIndexVersion;
+    memcpy(head + 5, &sig, 4);
+    head[9] = static_cast<uint8_t>(filter);
+    memcpy(head + 10, &n, 2);
+    head[12] = static_cast<uint8_t>(pathLen);
+    bool ok = fileSystem->writeFile(head, 13, fh) == 13 &&
+              fileSystem->writeFile(explorerCurrentPath, pathLen, fh) == static_cast<int32_t>(pathLen);
+    for (int i = first; ok && i < count; i++)
+    {
+        const char* name = explorerList[i];
+        if (name == nullptr)
+        {
+            ok = false;
+            break;
+        }
+        const uint8_t len = static_cast<uint8_t>(std::min<size_t>(strlen(name), 255));
+        ok = fileSystem->writeFile(&len, 1, fh) == 1 && fileSystem->writeFile(name, len, fh) == len;
+    }
+    fileSystem->closeFile(fh);
+    if (!ok)
+        fileSystem->remove(path);
 }

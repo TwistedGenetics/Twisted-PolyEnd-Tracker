@@ -658,6 +658,11 @@ class cFileManager
     bool loadBrowseIndex();
     void saveBrowseIndex();
     void browseIndexPath(char* out, size_t outSize);
+    // the same for a folder's sub-folder list (with the file counts that split big folders)
+    void folderIndexPath(const char* folder, int filter, char* out, size_t outSize);
+    bool loadFolderIndex(uint32_t sig, int filter, uint8_t first, int* countOut);
+    void saveFolderIndex(uint32_t sig, int filter, uint8_t first, int count);
+    bool enteredSplitGroup = false;
 
     // export sound
     void exportSoundEnd();
