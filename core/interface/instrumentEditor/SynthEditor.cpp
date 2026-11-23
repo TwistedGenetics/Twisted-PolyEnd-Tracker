@@ -11,6 +11,7 @@
 #include "mtAudioEngine.h"
 #include "util_math.h"
 #include "util_string.h"
+#include "engines/CraftyUser.h"
 #include "Platform.h"
 #include "Tracker.h"
 
@@ -836,7 +837,7 @@ bool twIsEnvTime(const std::string& lowerName)
 }
 } // namespace
 
-void cInstrumentEditor::randomizeCurrentPatch()
+void cInstrumentEditor::randomizeCurrentPatch(bool keepTables)
 {
     int syntPartIdx = mtProject.values.lastUsedInstrument - SYNTH_INSTRUMENTS_START_IDX;
     if (syntPartIdx < 0 || syntPartIdx >= kSynthInstrumentsCount)
@@ -886,6 +887,19 @@ void cInstrumentEditor::randomizeCurrentPatch()
                 pick = p.minValue;
             }
             v = static_cast<float>(pick);
+        }
+        else if (name == "table 1 file" || name == "table 2 file") // CRAFTY's wavetable files
+        {
+            if (keepTables)
+                continue;
+            // half the time one of your files (when there are any), otherwise the bank
+            v = twRand01() < 0.5f ? static_cast<float>(twistedCraftyRandomTable()) : 0.0f;
+        }
+        else if (name == "bank 1" || name == "bank 2")
+        {
+            if (keepTables)
+                continue;
+            v = static_cast<float>(1 + static_cast<int>(twRand() % 8u)); // one of the 8 factory banks
         }
         else if (twKeepAsIs(name))
         {
@@ -940,7 +954,7 @@ void cInstrumentEditor::randomizeCurrentPatch()
 
     getSynth()->setPatchDirty(syntPartIdx);
     newFileManager.setProjectStructChanged();
-    mtPopups.show(0, "Random patch");
+    mtPopups.show(0, keepTables ? "Random patch (tables kept)" : "Random patch");
 }
 
 // ------------------------------------------------------------------------------------------

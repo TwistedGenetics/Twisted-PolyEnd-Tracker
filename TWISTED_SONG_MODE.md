@@ -211,6 +211,15 @@ Code: `core/FileManager/fileManagerBrowse.cpp`, `platforms/*/SD.cpp`
   `/DX7/*.syx` 32-voice banks (up to 8) read in the file manager's idle time.
 - SAMPLE_MEMORY_SIZE now 1 MB below stock.
 
+## CRAFTY wavetable files (v1.18.0)
+
+- `CraftyTables.cpp`: every WAV under /Crafty/Wavetables (recursive, one folder per idle call) gets a permanent
+  number in /Crafty/TableIndex.txt (line n = number n, append-only); names, hash, sorted order in external RAM (4,000 max).
+- CRAFTY params `Table 1 File` / `Table 2 File` (0 = bank) hold the numbers; the voice's pool slot reads the file
+  after the value rests 150 ms (main loop) and hands it to `cr_inst_file_table` (vendored patch in cr_inst.c).
+- Editor: those params step in name order (Shift: by folder). Random Patch: factory banks or random files; Shift keeps them.
+- SAMPLE_MEMORY_SIZE 320 KB smaller again.
+
 ## Files
 
 | File | What |

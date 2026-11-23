@@ -419,7 +419,7 @@ class cInstrumentEditor : public ModuleBase
     int loadPatchList();
     void revertPatch();
     void initCurrentPatch();
-    void randomizeCurrentPatch(); // Twisted: Random Patch
+    void randomizeCurrentPatch(bool keepTables = false); // Twisted: Random Patch (Shift: keep the wavetables)
 
     void showSynthParamsScreen();
     void setSynthParamsScreenFunct();

@@ -25,6 +25,8 @@ typedef struct cr_inst {
     cr_wtbank_t tab[2];                 /* Wave 1's and Wave 2's bank, ready to play */
     uint8_t tb[2];                      /* which banks those are (0xFF: none yet) */
     volatile uint8_t tb_pending;        /* Twisted: render wants another bank (cr_inst_tables) */
+    const int16_t (*file[2])[CR_WT_N];  /* Twisted: a wavetable file in place of the wave's bank (0: the bank) */
+    uint8_t file_gen[2], tb_gen[2];     /*   ... which file (built when tb_gen differs) */
     const uint8_t *user;                /* the user area (CR_USER_BYTES, src/core/cr_user.h), or 0: no user presets / banks */
     uint16_t cur;                       /* the preset last loaded (0..191) */
     uint8_t dirty;                      /* the working patch differs from it */
@@ -60,6 +62,9 @@ void cr_inst_transport(cr_inst_t *in, double ppq, float bpm, int playing);
 void cr_inst_render(cr_inst_t *in, float *lr, uint32_t n);    /* n <= 128 frames, interleaved L R, about -1..1 */
 int cr_inst_tables_pending(const cr_inst_t *in);              /* Twisted: render wants a bank built ... */
 void cr_inst_tables(cr_inst_t *in);                           /* ... so build it (main loop, not the audio) */
+/* Twisted: play the 5 x 256 waves at base (the host keeps them) on wave k instead of its bank, or 0: the bank
+ * again. Builds now (main loop only). */
+void cr_inst_file_table(cr_inst_t *in, uint32_t k, const int16_t (*base)[CR_WT_N]);
 /* a parameter changed from inside (MIDI CC): its id + 1, or 0 when none is left. A whole new patch (program change)
  * is reported once by cr_inst_take_patch_changed(). */
 uint32_t cr_inst_take_changed(cr_inst_t *in);

@@ -12,6 +12,7 @@
 #include "util_string.h"
 
 #include "mtAudioEngine.h"
+#include "engines/CraftyUser.h"
 
 #include <cmath>
 
@@ -54,7 +55,7 @@ static void functSynthRandom() // Twisted: a new random patch every press
 {
     if (IE->keyboardManager.getState())
         return;
-    IE->randomizeCurrentPatch();
+    IE->randomizeCurrentPatch(IE->buttons->isButtonPressed(interfaceButtonShift));
     IE->showSynthPatchEditorScreen();
 }
 
@@ -844,6 +845,21 @@ void cInstrumentEditor::changeSynthPatchParamValue(int16_t value)
                 patch.setParamValue(
                   paramIdx, paramValueListPos, polysynth::Patch::ParamChangeSource::kKnob);
                 ENABLE_AUDIO_INTERRUPTS();
+            }
+            else if (metadata.params[paramIdx].displayName == "Table 1 File" ||
+                     metadata.params[paramIdx].displayName == "Table 2 File")
+            {
+                // Twisted: CRAFTY's wavetable files, in name order (Shift: a folder at a time)
+                const int cur = static_cast<int>(std::lround(patch.getParamValue(paramIdx).value_or(0)));
+                const int next =
+                  twistedCraftyTableStep(cur, value, buttons->isButtonPressed(interfaceButtonShift));
+                if (next != cur)
+                {
+                    DISABLE_AUDIO_INTERRUPTS();
+                    patch.setParamValue(
+                      paramIdx, static_cast<float>(next), polysynth::Patch::ParamChangeSource::kKnob);
+                    ENABLE_AUDIO_INTERRUPTS();
+                }
             }
             else
             {

@@ -8,7 +8,11 @@
 void twistedCraftyService();     // call from the main loop when the file manager is idle
 void twistedCraftyRequestScan(); // read the folder again (a CRAFTY instrument was made)
 void twistedCraftyBuildTables(); // every main-loop pass: build the wavetable banks the voices are waiting for
+int twistedCraftyTableStep(int id, int delta, bool byFolder); // the wavetable file list, in name order (0: Off)
+int twistedCraftyRandomTable();                               // any wavetable file on the card (0: none)
 #else
+inline int twistedCraftyTableStep(int id, int, bool) { return id; }
+inline int twistedCraftyRandomTable() { return 0; }
 inline void twistedCraftyBuildTables() {}
 inline void twistedCraftyService() {}
 inline void twistedCraftyRequestScan() {}

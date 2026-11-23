@@ -202,7 +202,7 @@
     <b>Firmware:</b> Twisted PolyEnd Tracker, based on Polyend Tracker Community Edition 1.0.0<br>
     <b>For:</b> Tracker+ (the original Tracker builds too; the Tracker Mini has no song tools)<br>
     <b>Repository:</b> github.com/TwistedGenetics/Twisted-PolyEnd-Tracker<br>
-    <b>Manual version:</b> 2.9 · November 2026
+    <b>Manual version:</b> 3.0 · November 2026
   </div>
 </div>
 
@@ -796,6 +796,19 @@
     <li>Up to 32 user banks. Frames up to 4096 samples long; 8, 16, 24 and 32-bit WAVs (and 32-bit float).</li>
     <li>Added files show up the next time you choose CRAFTY or load a project with it.</li>
   </ul>
+  <h3>Wavetable files: any table, no 32 limit</h3>
+  <p>Instead of a USER bank, each oscillator can play a wavetable file straight from the card, and you can keep up to 4,000 of them.</p>
+  <ul>
+    <li>Put WAV wavetables anywhere under <code>/Crafty/Wavetables</code>. Sub-folders are fine and a good idea (<code>Basses</code>, <code>Pads</code>, <code>Vocal</code>…).</li>
+    <li>On the <b>Oscillators</b> page, turn <b>Table 1 File</b> (under Bank 1) or <b>Table 2 File</b> (under Bank 2). It steps through your files in folder and name order, shown as <i>Folder/Name</i>. Stop on one and it loads in a moment, so you can scroll and listen. <b>Off (Bank)</b> plays Bank 1 / Bank 2 as before.</li>
+    <li>Hold <b>Shift</b> while turning to jump a whole folder at a time.</li>
+    <li>The file is saved with the patch and the project. Each file gets a number the first time the Tracker sees it, kept in <code>/Crafty/TableIndex.txt</code>; don't delete that file. Adding and deleting wavetables is fine; <b>renaming or moving</b> one makes it a new file, and patches using the old name show <b>Missing</b> and play the bank instead.</li>
+    <li>New files are found the next time you choose CRAFTY or load a project with it (the folders are looked at again at most every 20 seconds).</li>
+    <li>While a file plays on an oscillator, the mod matrix can't move that oscillator's bank.</li>
+    <li>Wavetable files are Tracker-only: the Crafty Synth plugin and the FM-1 don't have them.</li>
+  </ul>
+  <div class="note"><b>Memory</b>The file list and the loaded files take 320 KB more from the sample memory (now about 58.6 MB).</div>
+
   <h3>Your FM-1 / plugin presets and banks</h3>
   <p>Copy the plugin's user file to <code>/Crafty/Crafty Synth.user</code>. Its 128 user presets show up after the factory ones (<b>U1-1</b> to <b>U16-8</b>), and its user banks come first; the folder's tables fill the banks it leaves free.</p>
 </section>
@@ -811,6 +824,7 @@
   <h3>Random Patch (every synth model)</h3>
   <p>In the synth patch editor, press <b>Random Patch</b> (the fourth button, next to Init Patch). Every press makes a new sound; press <b>Save</b> or <b>Save As</b> to keep one you like.</p>
   <ul>
+    <li><b>CRAFTY's wavetables:</b> each oscillator gets one of the 8 factory banks or, half the time, one of your wavetable files. Hold <b>Shift</b> and press Random Patch to keep the wavetables (banks and files) and randomise everything else.</li>
     <li><b>REESE, CRAFTY, SUB, JUNO and DX7:</b> a random preset (DX7: a random voice; empty slots are skipped), then the knobs nudged either side of it and about a third of the switches changed. The results stay playable.</li>
     <li><b>The other models</b> (ACD, FAT, VAP, WTFM, PERC, DIRT, CHIP): every parameter random over its range, with attack, decay and release leaning short.</li>
     <li>Volume, gain, tuning, octave, transpose, tempo, arp, glide, pan and voice settings are left as they are, so a random patch stays in key and at the same level.</li>
@@ -924,6 +938,8 @@
     <tr><td>Remove colour</td><td>Select blocks, <kbd>Insert</kbd>, <kbd>F7</kbd>, <kbd>Delete</kbd></td></tr>
     <tr><td>Colour a track in the pattern editor</td><td><kbd>F8</kbd> (More) to the Name page, <kbd>F3</kbd>, pick <kbd>F1</kbd>–<kbd>F8</kbd></td></tr>
     <tr><td>Load a saved patch while editing</td><td>Patch editor, <b>Preset</b> (DX7: <b>Voice</b>): scroll past the built-in presets to the <b>&gt;</b> names</td></tr>
+    <tr><td>CRAFTY: play a wavetable file</td><td>Oscillators page, <b>Table 1 File</b> / <b>Table 2 File</b> (Shift + turn: a folder at a time)</td></tr>
+    <tr><td>Random patch, keep the wavetables</td><td>Hold <b>Shift</b>, press <b>Random Patch</b></td></tr>
     <tr><td>Random synth patch</td><td>Synth patch editor, <b>Random Patch</b> (press again for another)</td></tr>
     <tr><td>SH-101 bass / Juno / DX7</td><td>Instrument screen, a SYN slot, model <b>SUB</b>, <b>JUNO</b> or <b>DX7</b></td></tr>
     <tr><td>Load DX7 banks</td><td>Copy <code>.syx</code> banks to <code>/DX7</code> on the SD card, then choose DX7</td></tr>

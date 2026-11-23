@@ -90,7 +90,19 @@ static void tables_ex(cr_inst_t *in, int defer)
     uint32_t want[2], k;
     want[0] = cr_bank_of(cr_synth_eff(&in->syn, CR_W1BANK), 0);   /* the banks as the matrix leaves them */
     want[1] = cr_bank_of(cr_synth_eff(&in->syn, CR_W2BANK), 1);
-    for (k = 0; k < 2u; k++)
+    for (k = 0; k < 2u; k++) {
+        if (in->file[k]) {                      /* a wavetable file (no bank, the matrix can't move it) */
+            if (in->tb[k] != 0xFEu || in->tb_gen[k] != in->file_gen[k]) {
+                if (defer && in->tb[k] != 0xFFu) {
+                    in->tb_pending = 1;
+                    continue;
+                }
+                cr_wt_build(&in->tab[k], in->file[k]);
+                in->tb[k] = 0xFEu;
+                in->tb_gen[k] = in->file_gen[k];
+            }
+            continue;
+        }
         if (in->tb[k] != want[k]) {
             if (defer && in->tb[k] != 0xFFu) {
                 in->tb_pending = 1;
@@ -99,11 +111,23 @@ static void tables_ex(cr_inst_t *in, int defer)
             cr_wt_build(&in->tab[k], bank_base(in, want[k]));
             in->tb[k] = (uint8_t)want[k];
         }
+    }
     cr_synth_tables(&in->syn, &in->tab[0], &in->tab[1], in->tb[1] == CR_BANK_NOISE);
 }
 static void tables(cr_inst_t *in)
 {
     tables_ex(in, 1); /* also a bank change from a knob, a CC or a program change: the main loop builds it */
+}
+void cr_inst_file_table(cr_inst_t *in, uint32_t k, const int16_t (*base)[CR_WT_N])
+{
+    if (k > 1u)
+        return;
+    in->file[k] = base;
+    in->file_gen[k]++;
+    if (!base && in->tb[k] == 0xFEu)
+        in->tb[k] = 0xFDu;                      /* not a bank: the bank is built again */
+    in->tb_pending = 0;
+    tables_ex(in, 0);
 }
 int cr_inst_tables_pending(const cr_inst_t *in)
 {

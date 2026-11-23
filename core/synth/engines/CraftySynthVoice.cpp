@@ -16,6 +16,7 @@
 #ifdef FEATURE_SYNTH
 
 #include "CraftySynthVoice.h"
+#include "CraftyTables.h"
 #include "CraftyUser.h"
 #include "PolySynth/sdk/SynthVoiceSDK.h"
 #include "Platform.h"
@@ -127,6 +128,8 @@ enum class CraftyParamId : int
     kSubLvl, // 0.12: the sub oscillator
     kSubOct,
     kSubWave,
+    kTable1File, // Twisted: a wavetable file in place of Bank 1 / Bank 2 (CraftyTables.cpp)
+    kTable2File,
 };
 static_assert(static_cast<int>(CraftyParamId::kSubWave) == CR_NP, "one parameter per Crafty patch value");
 
@@ -154,17 +157,37 @@ const char* userBankName(void* /*ctx*/, uint32_t u)
 
 void craftyRequestScanImpl();
 
+// Twisted: wavetable files. Each pooled instance has room for its two files' waves; the voice says which file it
+// wants (fileWant), the main loop reads it once the choice has rested a moment (you can scroll through files).
+__NOINIT(EXTERNAL_RAM) int16_t fileWaves[kPoolSize][2][5][CR_WT_N];
+volatile int fileWant[kPoolSize][2] = {};
+int fileLoaded[kPoolSize][2] = {};
+int fileSeen[kPoolSize][2] = {};
+uint32_t fileSeenMs[kPoolSize][2] = {};
+constexpr uint32_t kFileRestMs = 150;
+
+int poolIndexOf(const cr_inst_t* in)
+{
+    for (int i = 0; i < kPoolSize; i++)
+        if (reinterpret_cast<const cr_inst_t*>(craftyPool[i]) == in)
+            return i;
+    return -1;
+}
+
 cr_inst_t* takeInstance()
 {
     for (int i = 0; i < kPoolSize; i++)
     {
         if (!craftyPoolUsed[i])
         {
-            craftyPoolUsed[i] = true;
             auto* in = reinterpret_cast<cr_inst_t*>(craftyPool[i]);
+            for (int k = 0; k < 2; k++)
+                fileWant[i][k] = fileLoaded[i][k] = fileSeen[i][k] = 0;
             cr_inst_init(in);
             cr_inst_set_user(in, userArea());
+            craftyPoolUsed[i] = true;
             craftyRequestScanImpl(); // pick up any new wavetables in the folder
+            twisted_tables::requestScan();
             return in;
         }
     }
@@ -176,6 +199,50 @@ void giveInstance(cr_inst_t* in)
     {
         if (reinterpret_cast<cr_inst_t*>(craftyPool[i]) == in)
             craftyPoolUsed[i] = false;
+    }
+}
+
+uint32_t craftyNowMs()
+{
+    return Tracker::getInstance()->getPlatform()->getTimer()->millis();
+}
+
+bool readTableWaves(FileSystem* fs, const char* path, int16_t out[5][CR_WT_N]);
+
+// main loop: read the wavetable files the voices want
+void serviceFileTables(FileSystem* fs)
+{
+    for (int i = 0; i < kPoolSize; i++)
+    {
+        if (!craftyPoolUsed[i])
+            continue;
+        auto* in = reinterpret_cast<cr_inst_t*>(craftyPool[i]);
+        for (int k = 0; k < 2; k++)
+        {
+            const int want = fileWant[i][k];
+            if (want == fileLoaded[i][k])
+                continue;
+            if (want != fileSeen[i][k])
+            {
+                fileSeen[i][k] = want;
+                fileSeenMs[i][k] = craftyNowMs();
+                return;
+            }
+            if (craftyNowMs() - fileSeenMs[i][k] < kFileRestMs)
+                continue;
+            if (want != 0 && !twisted_tables::known())
+                continue; // the folders haven't been walked yet: the number means nothing so far
+            bool ok = false;
+            if (want != 0 && twisted_tables::isPresent(want))
+            {
+                char path[340];
+                twisted_tables::fullPath(want, path, sizeof(path));
+                ok = readTableWaves(fs, path, fileWaves[i][k]);
+            }
+            fileLoaded[i][k] = want;
+            cr_inst_file_table(in, static_cast<uint32_t>(k), ok ? fileWaves[i][k] : nullptr);
+            return; // one file a call
+        }
     }
 }
 
@@ -287,6 +354,7 @@ __NOINIT(EXTERNAL_RAM) float scanSin[kMaxFrame];
 __NOINIT(EXTERNAL_RAM) float scanWaves[5][kWaveN];
 __NOINIT(EXTERNAL_RAM) float scanC256[kWaveN];
 __NOINIT(EXTERNAL_RAM) float scanS256[kWaveN];
+__NOINIT(EXTERNAL_RAM) int16_t importWaves[5][kWaveN];
 
 struct Scan
 {
@@ -433,11 +501,9 @@ void resampleFrame(int L, float* out)
     }
 }
 
-// a WAV file into user bank u: five frames picked evenly through the table
-bool importWav(FileSystem* fs, const char* name, uint32_t u)
+// a WAV file's five waves (frames picked evenly through the table), scaled to CRAFTY's wavetable peak
+bool readTableWaves(FileSystem* fs, const char* path, int16_t out[5][kWaveN])
 {
-    char path[300];
-    snprintf(path, sizeof(path), "%s/%s", kCraftyTables, name);
     auto [isOpen, fh] = fs->openFile(path, FileSystem::FileOpenMode::kRead);
     if (!isOpen)
         return false;
@@ -481,6 +547,22 @@ bool importWav(FileSystem* fs, const char* name, uint32_t u)
     if (peak <= 0.0f)
         return false;
 
+    const float g = kPeak / peak;
+    for (int k = 0; k < 5; k++)
+        for (int i = 0; i < kWaveN; i++)
+            out[k][i] = static_cast<int16_t>(std::lround(waves[k][i] * g));
+    return true;
+}
+
+// a WAV file in the folder into user bank u
+bool importWav(FileSystem* fs, const char* name, uint32_t u)
+{
+    char path[300];
+    snprintf(path, sizeof(path), "%s/%s", kCraftyTables, name);
+    auto& waves = importWaves;
+    if (!readTableWaves(fs, path, waves))
+        return false;
+
     auto* b = reinterpret_cast<cr_ubank_t*>(craftyUser + CR_FL_BANKS + u * CR_SECTOR);
     std::memset(b, 0, sizeof(*b));
     b->magic = CR_UBANK_MAGIC;
@@ -494,10 +576,7 @@ bool importWav(FileSystem* fs, const char* name, uint32_t u)
         if (ch >= ' ' && ch <= '_')
             b->name[c++] = ch;
     }
-    const float g = kPeak / peak;
-    for (int k = 0; k < 5; k++)
-        for (int i = 0; i < kWaveN; i++)
-            b->w[k][i] = static_cast<int16_t>(std::lround(waves[k][i] * g));
+    std::memcpy(b->w, waves, sizeof(b->w));
     return true;
 }
 
@@ -535,10 +614,12 @@ void craftyBuildTablesImpl()
 
 void craftyServiceImpl()
 {
-
     FileSystem* fs = Tracker::getInstance()->getPlatform()->getFileSystem();
     if (fs == nullptr || fs->isAsyncReadBusy())
         return;
+
+    twisted_tables::service(fs); // the wavetable files' numbers (one folder a call)
+    serviceFileTables(fs);       // the files the voices want
 
     if (scan.stage == 0)
     {
@@ -646,6 +727,7 @@ class CraftySynthVoice : public sdk::CustomSynthVoice<CraftySynthVoice, CraftyPa
   public:
     CraftySynthVoice()
       : in(takeInstance())
+      , poolIdx(poolIndexOf(in))
     {
         playMode = PlayMode::kLegato;
         std::fill(std::begin(knob), std::end(knob), 0.0f);
@@ -733,6 +815,11 @@ class CraftySynthVoice : public sdk::CustomSynthVoice<CraftySynthVoice, CraftyPa
                 v.apply(id);
         }
     }
+    static void setFile(CraftySynthVoice& v, int k, float x)
+    {
+        if (v.poolIdx >= 0)
+            fileWant[v.poolIdx][k] = std::clamp<int>(static_cast<int>(std::lround(x)), 0, twisted_tables::kMaxTables);
+    }
     static void setValue(CraftySynthVoice& v, int id, float x)
     {
         v.knob[id] = x;
@@ -741,6 +828,7 @@ class CraftySynthVoice : public sdk::CustomSynthVoice<CraftySynthVoice, CraftyPa
 
   private:
     cr_inst_t* in = nullptr;
+    int poolIdx = -1;
     int preset = 0;
     float knob[CR_NP];
     bool suppress = false;
@@ -822,6 +910,35 @@ void CraftySynthVoice::createMetadata(const Patch& /*patch*/, Patch::Metadata& m
 
     addAllCraftyParams(helper, std::make_integer_sequence<int, CR_NP>{});
 
+    // Twisted: a wavetable file from /Crafty/Wavetables in place of the bank (0: the bank)
+    auto fileText = [](Patch::paramvalue_t value) -> std::string
+    {
+        const int id = static_cast<int>(std::lround(value));
+        if (id <= 0)
+            return "Off (Bank)";
+        const char* p = twisted_tables::path(id);
+        if (p == nullptr)
+            return twisted_tables::known() ? "Missing file" : "File " + std::to_string(id);
+        std::string s(p);
+        if (s.size() > 4 && (s.compare(s.size() - 4, 4, ".wav") == 0 || s.compare(s.size() - 4, 4, ".WAV") == 0))
+            s.resize(s.size() - 4);
+        return twisted_tables::isPresent(id) ? s : "Missing: " + s;
+    };
+    helper.addParam(*P::kTable1File,
+                    { .displayName = "Table 1 File",
+                      .defaultValue = 0.0f,
+                      .minValue = 0,
+                      .maxValue = twisted_tables::kMaxTables,
+                      .valueFormatter = [fileText](const Patch&, Patch::paramvalue_t v) { return fileText(v); } },
+                    [](auto& v, Patch::optional_paramvalue_t val) { CraftySynthVoice::setFile(v, 0, val.value_or(0)); });
+    helper.addParam(*P::kTable2File,
+                    { .displayName = "Table 2 File",
+                      .defaultValue = 0.0f,
+                      .minValue = 0,
+                      .maxValue = twisted_tables::kMaxTables,
+                      .valueFormatter = [fileText](const Patch&, Patch::paramvalue_t v) { return fileText(v); } },
+                    [](auto& v, Patch::optional_paramvalue_t val) { CraftySynthVoice::setFile(v, 1, val.value_or(0)); });
+
     using EditorElement = Patch::Metadata::EditorLayout::EditorElement;
     auto e = [](int crId) { return EditorElement{ .type = EditorElement::Type::kParam, .id = crId + 1 }; };
     auto section = [&](const char* name, const char* shortName, std::initializer_list<int> ids)
@@ -841,6 +958,10 @@ void CraftySynthVoice::createMetadata(const Patch& /*patch*/, Patch::Metadata& m
                                                                   e(CR_GLIDE) } });
     layout.sections.push_back(section("Oscillators", "Osc",
                                       { CR_W1BANK, CR_W1POS, CR_W2BANK, CR_W2POS, CR_MIX, CR_SPREAD }));
+    layout.sections.back().elements.insert(layout.sections.back().elements.begin() + 1,
+                                           EditorElement{ .type = EditorElement::Type::kParam, .id = *P::kTable1File });
+    layout.sections.back().elements.insert(layout.sections.back().elements.begin() + 4,
+                                           EditorElement{ .type = EditorElement::Type::kParam, .id = *P::kTable2File });
     layout.sections.push_back(section("Oscillator Mod", "Osc Mod", { CR_OMMODE, CR_OMAMT, CR_BMODE, CR_BAMT }));
     layout.sections.push_back(section("Sub Oscillator", "Sub", { CR_SUBLVL, CR_SUBOCT, CR_SUBWAVE }));
     layout.sections.push_back(section("Filter", "Filter", { CR_FTYPE, CR_CUT, CR_RES, CR_MORPH, CR_FEGAMT }));
@@ -904,6 +1025,14 @@ void craftyRequestScan()
 void twistedCraftyService()
 {
     polysynth::craftyService();
+}
+int twistedCraftyTableStep(int id, int delta, bool byFolder)
+{
+    return twisted_tables::step(id, delta, byFolder);
+}
+int twistedCraftyRandomTable()
+{
+    return twisted_tables::random();
 }
 void twistedCraftyBuildTables()
 {
