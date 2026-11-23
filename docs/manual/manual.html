@@ -202,7 +202,7 @@
     <b>Firmware:</b> Twisted PolyEnd Tracker, based on Polyend Tracker Community Edition 1.0.0<br>
     <b>For:</b> Tracker+ (the original Tracker builds too; the Tracker Mini has no song tools)<br>
     <b>Repository:</b> github.com/TwistedGenetics/Twisted-PolyEnd-Tracker<br>
-    <b>Manual version:</b> 2.4 · November 2026
+    <b>Manual version:</b> 2.5 · November 2026
   </div>
 </div>
 
@@ -459,7 +459,7 @@
     <li>Press <kbd>F5</kbd> (Clone In Place).</li>
   </ol>
   <p>The Tracker copies the pattern into the <b>next free pattern</b> and points the slot at the copy. A message tells you the new pattern number, for example <i>Slot 7 now plays pattern 23</i>. The copy has the same name as the original.</p>
-  <p>The next free pattern is the lowest-numbered pattern that is empty, isn't used anywhere in the song, and isn't part of a variation.</p>
+  <p>The next free pattern is the lowest-numbered pattern <b>from 11 up</b> that is empty, isn't used anywhere in the song, and isn't part of a variation. Patterns 1 to 10 are never used for copies: they're kept for your own ideas. Make Variation works the same way.</p>
   <div class="note"><b>Tip</b>Clone a slot, then open it in the pattern editor to make a fill or a drop-out for that one bar without touching the main groove.</div>
 </section>
 
@@ -867,7 +867,7 @@
   <table>
     <tr><th>Message or problem</th><th>Meaning / what to do</th></tr>
     <tr><td><b>Press REC to edit the song</b></td><td>That tool changes the song. Turn on edit mode with <kbd>Rec</kbd> first.</td></tr>
-    <tr><td><b>No free pattern left</b></td><td>Every pattern is used, so Clone In Place or Make Variation has nowhere to copy to. Clear a pattern you don't need.</td></tr>
+    <tr><td><b>No free pattern left</b></td><td>Every pattern is used, so Clone In Place or Make Variation has nowhere to copy to (copies only go in patterns 11 and up). Clear a pattern from 11 up that you don't need.</td></tr>
     <tr><td><b>Too many sections</b></td><td>The song already has 32 sections. Remove one first.</td></tr>
     <tr><td><b>No section here</b></td><td>The selected slot is before the first section, so there's no divider to remove.</td></tr>
     <tr><td><b>Not a linked variation</b></td><td>Unlink only works on slots marked with <code>~</code>.</td></tr>

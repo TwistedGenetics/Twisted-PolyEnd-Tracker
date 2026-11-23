@@ -70,7 +70,7 @@ Exporting the song always renders it straight through once, ignoring loops.
 ## Clone in place
 
 **F5** copies the selected slot's pattern into the next free pattern and points the
-slot at it. The free pattern is the lowest-numbered one that's empty and isn't used
+slot at it. The free pattern is the lowest-numbered one from 11 up (1-10 are kept for your own ideas) that's empty and isn't used
 anywhere in the song. Now you can change this slot without touching the other places
 the original pattern is used. The pattern name is copied too.
 

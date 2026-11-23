@@ -14,6 +14,8 @@
 #include <cr_section_macros.h>
 #include <string.h>
 
+#include <algorithm>
+
 namespace
 {
 constexpr uint8_t kDirtyEdited = 0x01; // written by the user / an edit: check ownership
@@ -38,9 +40,12 @@ bool tracksEqual(Sequencer::strPattern::strTrack* a, Sequencer::strPattern::strT
 }
 } // namespace
 
+// clones (clone in place, linked variations) go after pattern 10: patterns 1-10 are kept for your own ideas
+static constexpr int kTwistedFirstClonePattern = 11;
+
 int cFileManager::findFreePatternIdx()
 {
-    for (int idx = PATTERN_INDEX_MIN; idx <= PATTERN_INDEX_MAX; idx++)
+    for (int idx = std::max<int>(PATTERN_INDEX_MIN, kTwistedFirstClonePattern); idx <= PATTERN_INDEX_MAX; idx++)
     {
         uint8_t bitmaskIdx = idx - 1;
         if (mtProject.values.allPatternsBitmask[bitmaskIdx] != 0 ||
