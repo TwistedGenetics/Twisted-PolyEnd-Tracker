@@ -691,7 +691,7 @@ static void functImportStreamApply()
 
 void cSampleImporter::importPartOfSample()
 {
-    uint8_t selStart = getSelectionStart(listFiles);
+    uint16_t selStart = getSelectionStart(listFiles);
 
     FileManagerOperation::SampleLoadMode loadMode =
       importForceStream ? FileManagerOperation::SampleLoadMode::kStream
@@ -1458,8 +1458,8 @@ void cSampleImporter::importSamples()
 {
     if (!fullMemoryFlag)
     {
-        uint8_t selStart = getSelectionStart(listFiles);
-        uint8_t selEnd = getSelectionEnd(listFiles);
+        uint16_t selStart = getSelectionStart(listFiles);
+        uint16_t selEnd = getSelectionEnd(listFiles);
 
         bool result = newFileManager.importSamplesToProject(
           selStart,
@@ -1574,7 +1574,7 @@ void cSampleImporter::calculateFileMemUsage()
 
     if (selectionLength[listFiles] && selectedPlace == 0)
     {
-        uint8_t selectionStart = getSelectionStart(listFiles);
+        uint16_t selectionStart = getSelectionStart(listFiles);
 
         if (selectedSlot + selectionLength[listFiles] > 48)
         {
@@ -1786,8 +1786,8 @@ void cSampleImporter::updateSelection()
     display.refreshControl(instrumentListControl);
 }
 
-uint8_t cSampleImporter::handleSelecting(uint8_t selectStart,
-                                         uint8_t selectMax,
+uint16_t cSampleImporter::handleSelecting(uint16_t selectStart,
+                                          uint16_t selectMax,
                                          int16_t value,
                                          uint8_t fileCheck)
 {
@@ -1937,7 +1937,7 @@ int16_t cSampleImporter::getSelectionEnd(uint8_t whichSelect)
     }
 }
 
-bool cSampleImporter::checkIfValidSelection(uint8_t positionToCheck)
+bool cSampleImporter::checkIfValidSelection(uint16_t positionToCheck)
 {
     if (explorerNames != nullptr && !(*explorerNames[positionToCheck] == '/'))
     {

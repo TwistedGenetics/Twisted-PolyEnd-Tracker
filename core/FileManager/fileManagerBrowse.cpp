@@ -10,6 +10,7 @@
 #include "AudioDataUtilities.h"
 #include "fileManager.h"
 #include "fileTransfer.h"
+#include "Tracker.h"
 
 #include <cctype>
 #include <cstdlib>
@@ -74,7 +75,7 @@ void parseFolderName(const char* input, char* name, uint16_t* offset)
     }
 }
 
-bool cFileManager::browseSdCard(uint8_t* index)
+bool cFileManager::browseSdCard(uint16_t* index)
 {
     if (status != fmIdle && status != fmSavingProjectToWorkspace)
         return false;
@@ -172,7 +173,7 @@ char* cFileManager::getExplorerPath()
     return explorerCurrentPath;
 }
 
-uint8_t cFileManager::getBrowsedFilesList(char*** list, uint32_t** memoryList)
+uint16_t cFileManager::getBrowsedFilesList(char*** list, uint32_t** memoryList)
 {
     *list = explorerList;
     *memoryList = currentFolderMemoryFileUsage;
@@ -191,7 +192,7 @@ void cFileManager::browseCurrentLocation()
 
 void cFileManager::listOnlyFolderNames()
 {
-    uint8_t allFoldersNum;
+    int allFoldersNum;
     uint8_t parentFolder = explorerDirLevel == 0 ? 0 : 1;
     FileSystem::enListFileFilter folderSizeFilter = FileSystem::enListFileFilter_all;
 
@@ -206,12 +207,17 @@ void cFileManager::listOnlyFolderNames()
     allFoldersNum = fileSystem->createFilesList(explorerCurrentPath,
                                                 parentFolder,
                                                 explorerList,
-                                                list_length_max,
-                                                5000,
+                                                explorer_list_max,
+                                                8000,
                                                 FileSystem::enListFileFilter_folder,
                                                 0,
-                                                list_length_max - 1,
+                                                explorer_list_max - 1,
                                                 folderSizeFilter);
+
+    if (allFoldersNum < parentFolder) // kListError
+    {
+        allFoldersNum = parentFolder;
+    }
 
     explorerFolderCount = allFoldersNum - parentFolder;
 
@@ -219,7 +225,7 @@ void cFileManager::listOnlyFolderNames()
     {
         allFoldersNum = parentFolder;
 
-        for (int i = 0; i < list_length_max; i++)
+        for (int i = 0; i < explorer_list_max; i++)
         {
             if (explorerList[i] != nullptr)
             {
@@ -244,88 +250,33 @@ void cFileManager::listOnlyFolderNames()
 
 void cFileManager::listOnlyWavFromActualPath()
 {
-
-    if (listWavStage == 0) // stage 0
+    // Twisted: faster browsing.
+    //  - names are sorted straight after listing, then each file is opened ONCE
+    //    to both validate it and work out its memory size (stock firmware opened
+    //    every wav twice, plus an extra directory search)
+    //  - as many files as fit in a short time slice are checked per update,
+    //    instead of one file per update
+    if (listWavStage == 0) // stage 0 - list
     {
-        uint8_t filesFound =
+        int filesFound =
           fileSystem->createFilesList(explorerCurrentPath,
                                       0,
                                       explorerList + explorerListLength,
-                                      (list_length_max - explorerListLength),
-                                      8000,
+                                      (explorer_list_max - explorerListLength),
+                                      24000,
                                       FileSystem::enListFileFilter_wave_inst,
                                       std::max(explorerCurrentOffset - explorerFolderCount, 0));
 
-        if (filesFound == 0 || // nie ma plikow wav w folderze - koncz listowanie
-            filesFound == FileSystem::kListError)
+        if (filesFound <= 0) // nie ma plikow wav w folderze (lub blad) - koncz listowanie
         {
             browseFinish();
             return;
         }
 
         openCalcStart = explorerListLength;
-        openCurrentPos = openCalcStart;
         explorerListLength += filesFound;
         openCalcEnd = explorerListLength;
 
-        listWavStage = 1;
-    }
-    else if (listWavStage == 1) // stage 1 - przefiltruj znalezione wav o nie obslugiwane
-    {
-        char* fileName = explorerList[openCurrentPos];
-        if (hasFileExtension(fileName, "wav"))
-        {
-            char wav_file[255];
-            strcpy(wav_file, explorerCurrentPath);
-            strcat(wav_file, "/");
-            strcat(wav_file, explorerList[openCurrentPos]);
-
-            auto [isOpen, fileHandle] = fileSystem->openFile(wav_file);
-            if (isOpen)
-            {
-                strWavFileHeader localHeader;
-                bool headerRead = readHeader(&localHeader, fileHandle);
-                fileSystem->closeFile(fileHandle);
-
-                if (headerRead && checkSampleValid(localHeader))
-                {
-                    openCurrentPos++;
-                    if (openCurrentPos >= explorerListLength)
-                    {
-                        listWavStage = 2;
-                    }
-                    return;
-                }
-            }
-        }
-        else if (hasFileExtension(fileName, "pti"))
-        {
-            openCurrentPos++;
-            if (openCurrentPos >= explorerListLength)
-            {
-                listWavStage = 2;
-            }
-            return;
-        }
-
-        if (openCurrentPos < explorerListLength - 1)
-        {
-            std::swap(explorerList[openCurrentPos], explorerList[explorerListLength - 1]);
-        }
-        else
-        {
-            // browseFinish();
-            listWavStage = 2;
-        }
-        explorerListLength--;
-
-        //		if(openCurrentPos > 1)	explorerListLength = openCurrentPos;
-        //		else explorerListLength = 1;
-        //		browseFinish();
-        //		listWavStage = 2;
-    }
-    else //  stage 2 - posortuj alfabetycznie
-    {
         if (openCalcStart < explorerListLength - 1)
         {
             std::sort(explorerList + openCalcStart,
@@ -334,9 +285,106 @@ void cFileManager::listOnlyWavFromActualPath()
         }
 
         openCurrentPos = openCalcStart;
-        moveToNextOperationStep();
-        listWavStage = 0;
+        listWavStage = 1;
     }
+    else // stage 1 - validate + size, several files per update
+    {
+        Timer* timer = Tracker::getInstance()->getPlatform()->getTimer();
+        const uint32_t sliceStart = timer->millis();
+        constexpr uint32_t kSliceMs = 12;
+
+        while (openCurrentPos < explorerListLength)
+        {
+            if (browseCheckOneFile(openCurrentPos))
+            {
+                openCurrentPos++;
+            }
+            else
+            {
+                // drop unsupported file, keep the sorted order
+                delete explorerList[openCurrentPos];
+                uint16_t tail = explorerListLength - openCurrentPos - 1;
+                if (tail > 0)
+                {
+                    memmove(&explorerList[openCurrentPos],
+                            &explorerList[openCurrentPos + 1],
+                            tail * sizeof(explorerList[0]));
+                }
+                explorerListLength--;
+                explorerList[explorerListLength] = nullptr;
+            }
+
+            if ((timer->millis() - sliceStart) >= kSliceMs)
+            {
+                return; // continue on next update
+            }
+        }
+
+        listWavStage = 0;
+        browseFinish();
+    }
+}
+
+bool cFileManager::browseCheckOneFile(uint16_t pos)
+{
+    const char* name = explorerList[pos];
+    currentFolderMemoryFileUsage[pos] = 0;
+
+    if (name == nullptr)
+    {
+        return false;
+    }
+
+    char filePath[512];
+    snprintf(filePath,
+             sizeof(filePath),
+             (explorerDirLevel > 0) ? "%s/%s" : "%s%s",
+             explorerCurrentPath,
+             name);
+
+    if (hasFileExtension(name, "pti"))
+    {
+        currentFolderMemoryFileUsage[pos] = getInstrumentSampleSizeIfValid(filePath);
+        return true; // instruments are always listed (as stock)
+    }
+
+    if (!hasFileExtension(name, "wav"))
+    {
+        return false;
+    }
+
+    auto [isOpen, fileHandle] = fileSystem->openFile(filePath, FileSystem::FileOpenMode::kRead);
+    if (!isOpen)
+    {
+        return false;
+    }
+
+    strWavFileHeader header = {};
+    bool headerRead = readHeader(&header, fileHandle);
+    uint32_t wavDataSize = headerRead ? fileSystem->getFileAvailable(fileHandle) : 0;
+    fileSystem->closeFile(fileHandle);
+
+    if (!headerRead || !checkSampleValid(header))
+    {
+        return false;
+    }
+
+    // same maths as getWaveSizeAfterConversion()
+    uint16_t allChannelBytesPerOneSample = (header.bitsPerSample / 8) * header.numChannels;
+    if (header.sampleRate == 0 || allChannelBytesPerOneSample == 0 || wavDataSize == 0)
+    {
+        return true;
+    }
+
+    uint32_t wavDataSizeBytes =
+      (wavDataSize <= header.subchunk2Size) ? wavDataSize : header.subchunk2Size;
+    uint32_t totalSamplesCountPerChannel = wavDataSizeBytes / allChannelBytesPerOneSample;
+    uint64_t samplesCount =
+      (uint64_t)totalSamplesCountPerChannel * targetSampleRate / header.sampleRate;
+
+    currentFolderMemoryFileUsage[pos] =
+      samplesCount * ((stereoSampleMode && header.numChannels >= 2) ? 4 : 2);
+    return true;
 }
 
 void cFileManager::processDirFileSizes() // wykonywalne w petli

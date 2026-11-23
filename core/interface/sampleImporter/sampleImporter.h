@@ -133,7 +133,7 @@ class cSampleImporter : public ModuleBase
     // pliki wybranym folderze
     uint16_t locationExplorerCount = 0;
     char** explorerNames;
-    uint8_t selectedFile = 0;
+    uint16_t selectedFile = 0;
     char copyingInfo[20];
     uint32_t* currentFolderMemoryFileUsage;
 
@@ -194,7 +194,7 @@ class cSampleImporter : public ModuleBase
     void rewindListToBeggining();
     void moveInstrListToEnd();
 
-    static const uint8_t maxListLength = 100;
+    static const uint16_t maxListLength = 500; // Twisted: matches cFileManager::explorer_list_max
     uint8_t selectionActive[2] = { 0, 0 };
     uint32_t explorerHeaderColors[4];
     uint32_t instrumentHeaderColors[4];
@@ -288,8 +288,8 @@ class cSampleImporter : public ModuleBase
     //----------------------------------
     void updateSelection();
 
-    uint8_t handleSelecting(uint8_t selectStart,
-                            uint8_t selectMax,
+    uint16_t handleSelecting(uint16_t selectStart,
+                             uint16_t selectMax,
                             int16_t value,
                             uint8_t fileCheck);
 
@@ -297,7 +297,7 @@ class cSampleImporter : public ModuleBase
     int16_t getSelectionStart(uint8_t whichSelect);
     int16_t getSelectionEnd(uint8_t whichSelect);
 
-    bool checkIfValidSelection(uint8_t positionToCheck);
+    bool checkIfValidSelection(uint16_t positionToCheck);
 
     void handleMemoryBar();
     void calculateFileMemUsage();

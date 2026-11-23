@@ -202,7 +202,7 @@
     <b>Firmware:</b> Twisted PolyEnd Tracker, based on Polyend Tracker Community Edition 1.0.0<br>
     <b>For:</b> Tracker+ (the original Tracker builds too; the Tracker Mini has no song tools)<br>
     <b>Repository:</b> github.com/TwistedGenetics/Twisted-PolyEnd-Tracker<br>
-    <b>Manual version:</b> 1.4 · November 2026
+    <b>Manual version:</b> 1.5 · November 2026
   </div>
 </div>
 
@@ -221,9 +221,10 @@
     <li><span class="n">9</span> Block colours</li>
     <li><span class="n">10</span> Akaizer timestretch (Sample Editor)</li>
     <li><span class="n">11</span> Akaizer play mode and FX commands</li>
-    <li><span class="n">12</span> Projects, saving and compatibility</li>
-    <li><span class="n">13</span> Messages and troubleshooting</li>
-    <li><span class="n">14</span> Quick reference</li>
+    <li><span class="n">12</span> Faster sample browser</li>
+    <li><span class="n">13</span> Projects, saving and compatibility</li>
+    <li><span class="n">14</span> Messages and troubleshooting</li>
+    <li><span class="n">15</span> Quick reference</li>
   </ol>
 </section>
 
@@ -241,6 +242,7 @@
     <tr><td><b>Pattern names</b></td><td>Name a pattern from the song view. It's the same name the pattern editor shows, so a name set in either place shows in both.</td></tr>
     <tr><td><b>Akaizer</b></td><td>The classic Akaizer timestretch: as a Sample Editor effect, as a live <b>Akaizer play mode</b> for instruments, and as two FX commands (<code>K</code> Stretch, <code>Y</code> Cycle) that change it per step.</td></tr>
     <tr><td><b>Block colours</b></td><td>Colour-code the blocks in the song view with 8 colours (drums blue, bass red…). Colours move with blocks you copy.</td></tr>
+    <tr><td><b>Faster sample browser</b></td><td>Folders open much faster, and a folder of up to 499 samples is shown as one list instead of being split into groups of 99.</td></tr>
   </table>
   <div class="note"><b>Your projects stay safe</b>Sections, variation links and block colours are kept in a separate file inside the project. Stock Polyend firmware ignores that file, so it still opens your projects. It just won't show the sections or colours, or keep variations linked.</div>
 </section>
@@ -631,7 +633,25 @@
 
 <!-- ============================================================ 10 -->
 <section>
-  <h2>12 · Projects, saving and compatibility</h2>
+  <h2>12 · Faster sample browser</h2>
+  <p>The sample browser (Sample Loader) is faster, and it no longer splits big folders into groups of 99.</p>
+  <h3>One list per folder</h3>
+  <ul>
+    <li>A folder with up to <b>499</b> samples now opens as one list. Stock firmware showed folders with more than 99 samples as several entries, such as <code>/Breaks (1-99)</code> and <code>/Breaks (100-198)</code>.</li>
+    <li>Only a folder with more than 499 samples is still split, into groups of 499.</li>
+    <li>Selecting and loading work as before. You can still select up to 48 samples at once.</li>
+  </ul>
+  <h3>Why it's faster</h3>
+  <ul>
+    <li>Each sample file is opened once instead of twice.</li>
+    <li>The Tracker checks many files at a time instead of one per screen update.</li>
+  </ul>
+  <div class="note"><b>Tips for the fastest browsing</b>Keep each folder under 499 samples. Sort samples into folders (Breaks, Bass, FX…) rather than one huge folder. A fast, freshly formatted SD card helps too.</div>
+</section>
+
+<!-- ============================================================ 10 -->
+<section>
+  <h2>13 · Projects, saving and compatibility</h2>
   <ul>
     <li>Sections, variation links and block colours are saved in the file <code>patterns/twistedSong</code> inside each project, next to the pattern files.</li>
     <li>They're saved and opened with the project as usual. You don't need to do anything extra.</li>
@@ -650,7 +670,7 @@
 
 <!-- ============================================================ 10 -->
 <section>
-  <h2>13 · Messages and troubleshooting</h2>
+  <h2>14 · Messages and troubleshooting</h2>
   <table>
     <tr><th>Message or problem</th><th>Meaning / what to do</th></tr>
     <tr><td><b>Press REC to edit the song</b></td><td>That tool changes the song. Turn on edit mode with <kbd>Rec</kbd> first.</td></tr>
@@ -667,6 +687,7 @@
     <tr><td>K / Y FX do nothing</td><td>They only act on instruments in Akaizer play mode.</td></tr>
     <tr><td>A block I coloured shows no colour</td><td>Only blocks with notes are coloured. Add notes to that track and the colour appears.</td></tr>
     <tr><td>Colouring one slot coloured others too</td><td>Those slots play the same pattern. Use Clone In Place (<kbd>F5</kbd>) first to give the slot its own pattern.</td></tr>
+    <tr><td>A folder still shows as <code>(1-499)</code>, <code>(500-998)</code>…</td><td>That folder has more than 499 samples. Split it into smaller folders to see it as one list.</td></tr>
     <tr><td>Insert doesn't open the tools</td><td>Check that you're running the Twisted firmware and are on the Song screen. The Tracker Mini has no song tools.</td></tr>
   </table>
   <p>Found a bug? Open an issue on the repository with the steps that cause it.</p>
@@ -674,7 +695,7 @@
 
 <!-- ============================================================ 11 -->
 <section>
-  <h2>14 · Quick reference</h2>
+  <h2>15 · Quick reference</h2>
   <table>
     <tr><th>Do this</th><th>Press</th></tr>
     <tr><td>Open / close song tools</td><td><kbd>Insert</kbd> on the Song screen</td></tr>

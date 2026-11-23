@@ -6,7 +6,7 @@
 
 #include "mtAudioEngine.h"
 
-bool cFileManager::previevSamplefromSD(uint8_t index, uint16_t from, uint16_t to)
+bool cFileManager::previevSamplefromSD(uint16_t index, uint16_t from, uint16_t to)
 {
     if (status != fmIdle && status != fmSavingProjectToWorkspace)
         return false;

@@ -201,7 +201,7 @@ class cFileManager
 
     // getery
     bool projectExist(char* path, char* name);
-    uint8_t getBrowsedFilesList(char*** list, uint32_t** memoryList);
+    uint16_t getBrowsedFilesList(char*** list, uint32_t** memoryList);
     uint8_t getProjectsList(char*** list);
     uint8_t getModsList(char*** list);
     uint8_t getFirmwaresList(char*** list);
@@ -238,8 +238,8 @@ class cFileManager
     bool saveProject(char* projectPathToSave = nullptr, char* projectNameToSave = nullptr);
 
     bool importSamplesToProject(
-      uint8_t fileFrom,
-      uint8_t fileTo,
+      uint16_t fileFrom,
+      uint16_t fileTo,
       uint8_t instrumentSlot,
       uint16_t dataFrom,
       uint16_t dataTo,
@@ -250,7 +250,7 @@ class cFileManager
                                     uint8_t copyInstrCount,
                                     uint8_t copyInstrDest);
 
-    bool browseSdCard(uint8_t* index);
+    bool browseSdCard(uint16_t* index);
     bool browseFirmwares();
     bool browseGames();
 
@@ -260,7 +260,7 @@ class cFileManager
     const char* getModsDefaultPath();
     void createProjectsAndModFolders();
 
-    bool previevSamplefromSD(uint8_t index, uint16_t from, uint16_t to);
+    bool previevSamplefromSD(uint16_t index, uint16_t from, uint16_t to);
     bool stopPrevievSamplefromSD();
 
     bool deleteInstruments(uint8_t instrumentSlotFrom, uint8_t instrumentSlotTo);
@@ -601,7 +601,7 @@ class cFileManager
     uint32_t newSamplesSize = 0;
     uint32_t oldSamplesSize = 0;
 
-    uint8_t importCurrentFile;
+    uint16_t importCurrentFile;
     int8_t importStartSlot;
     int8_t importEndSlot;
 
@@ -610,6 +610,9 @@ class cFileManager
     // browsers
     // project
     static const uint8_t list_length_max = 101; // 100 + parent folder
+    // Twisted: the sample browser holds far more entries so big sample folders
+    // are no longer split into "(1-99)" style groups
+    static const uint16_t explorer_list_max = 500; // 499 + parent folder
     uint8_t projectsListLength = 0;
     static char* projectsList[list_length_max];
 
@@ -630,24 +633,25 @@ class cFileManager
     void browseFinish();
     void goUpInActualPath();
 
-    uint8_t explorerListLength = 0;
-    static char* explorerList[list_length_max];
+    uint16_t explorerListLength = 0;
+    static char* explorerList[explorer_list_max];
     char explorerCurrentPath[255] = { '/', 0 };
     uint16_t explorerCurrentOffset;
     uint8_t explorerDirLevel = 0;
-    uint8_t explorerFolderCount;
+    uint16_t explorerFolderCount;
 
     uint8_t listWavStage;
 
     static const uint8_t PREVIOUS_POSITION_LIFO = 20;
-    uint8_t explorerPositionTable[PREVIOUS_POSITION_LIFO];
+    uint16_t explorerPositionTable[PREVIOUS_POSITION_LIFO];
     uint8_t explorerCurrentPosition;
 
-    uint8_t openCalcStart = 0;
-    uint8_t openCalcEnd = 0;
-    uint8_t openCurrentPos = 0;
+    uint16_t openCalcStart = 0;
+    uint16_t openCalcEnd = 0;
+    uint16_t openCurrentPos = 0;
 
-    static uint32_t currentFolderMemoryFileUsage[list_length_max];
+    static uint32_t currentFolderMemoryFileUsage[explorer_list_max];
+    bool browseCheckOneFile(uint16_t pos); // Twisted: one open per file
 
     // export sound
     void exportSoundEnd();

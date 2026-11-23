@@ -1,3 +1,4 @@
+#include <new>
 #include "fsl_sd.h"
 #include <stdio.h>
 #include <string.h>
@@ -435,16 +436,16 @@ bool SdDir::filterFileEntry(const FILINFO& fno, enListFileFilter filter)
 
 // filter: 0-all, 1-folders only, 2-supported wav only, 3-ptf // always ignore hidden files //
 // max_used_memory must be higher than 255
-uint16_t SdDir::createFilesList(uint8_t start_line,
+uint16_t SdDir::createFilesList(uint16_t start_line,
                                 char** list,
-                                uint8_t list_length,
+                                uint16_t list_length,
                                 uint16_t max_used_memory,
                                 enListFileFilter filter,
                                 uint16_t skip_count,
                                 uint16_t max_files_in_subdir,
                                 enListFileFilter folderSizeFilter)
 {
-    for (uint8_t i = 0; i < list_length; i++) // wyczyszczenie uzytej wczesniej pamieci
+    for (uint16_t i = 0; i < list_length; i++) // wyczyszczenie uzytej wczesniej pamieci
     {
         if (list[i] != nullptr)
         {
@@ -453,7 +454,7 @@ uint16_t SdDir::createFilesList(uint8_t start_line,
         }
     }
 
-    uint8_t n = start_line;
+    uint16_t n = start_line;
 
     if (max_used_memory < 255)
     {
@@ -505,14 +506,18 @@ uint16_t SdDir::createFilesList(uint8_t start_line,
         else
             len += 1;
 
-        list[n] = new char[len];
+        list[n] = new (std::nothrow) char[len];
+        if (list[n] == nullptr) // Twisted: out of heap - stop listing instead of crashing
+            break;
         memory_used += len;
 
         if (fno.fattrib & AM_DIR) // folder
         {
             strcpy(list[n], "/");
             strcat(list[n], fno.fname);
-            int16_t files_count = countFilesInSubDirectory(fno.fname, folderSizeFilter);
+            // Twisted: only walk the sub folder when it may need splitting
+            int16_t files_count =
+              (max_files_in_subdir != 0) ? countFilesInSubDirectory(fno.fname, folderSizeFilter) : 0;
 
             if (max_files_in_subdir != 0 && files_count > max_files_in_subdir)
             {
@@ -526,7 +531,9 @@ uint16_t SdDir::createFilesList(uint8_t start_line,
                         delete list[n];
                         memory_used -= len;
                     }
-                    list[n] = new char[len];
+                    list[n] = new (std::nothrow) char[len];
+                    if (list[n] == nullptr)
+                        return n;
                     memory_used += len;
                     snprintf(list[n],
                              len,

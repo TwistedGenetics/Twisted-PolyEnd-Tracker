@@ -21,8 +21,15 @@ __NOINIT(EXTERNAL_RAM) uint8_t externalRamFileManagerBuffL[READ_WRITE_BUFOR_SIZE
 __NOINIT(EXTERNAL_RAM) char* cFileManager::projectsList[cFileManager::list_length_max];
 __NOINIT(EXTERNAL_RAM) char* cFileManager::firmwaresList[cFileManager::list_length_max];
 __NOINIT(EXTERNAL_RAM) char* cFileManager::modsList[cFileManager::list_length_max];
-__NOINIT(EXTERNAL_RAM) char* cFileManager::explorerList[cFileManager::list_length_max];
-__NOINIT(EXTERNAL_RAM) uint32_t cFileManager::currentFolderMemoryFileUsage[cFileManager::list_length_max];
+// Twisted: the larger sample browser lists live in on-chip OCRAM on the IMX
+// targets (external RAM is full there)
+#ifdef PLATFORM_IMX
+#define TWISTED_BROWSER_RAM __BSS(SRAM_OC)
+#else
+#define TWISTED_BROWSER_RAM __NOINIT(EXTERNAL_RAM)
+#endif
+TWISTED_BROWSER_RAM char* cFileManager::explorerList[cFileManager::explorer_list_max];
+TWISTED_BROWSER_RAM uint32_t cFileManager::currentFolderMemoryFileUsage[cFileManager::explorer_list_max];
 __NOINIT(EXTERNAL_RAM) cFileManager::strImportFileDataCommon cFileManager::impFileData;
 
 cFileManager newFileManager;
@@ -215,8 +222,8 @@ bool cFileManager::openProject(char* path, char* name)
     return projectOpen.openProject(path, name);
 }
 
-bool cFileManager::importSamplesToProject(uint8_t fileFrom,
-                                          uint8_t fileTo,
+bool cFileManager::importSamplesToProject(uint16_t fileFrom,
+                                          uint16_t fileTo,
                                           uint8_t instrumentSlot,
                                           uint16_t dataFrom,
                                           uint16_t dataTo,

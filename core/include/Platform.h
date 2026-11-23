@@ -394,9 +394,9 @@ class FileSystem
     virtual int countContainedFiles(const char* path) = 0;
 
     virtual int createFilesList(const char* path,
-                                uint8_t start_line,
+                                uint16_t start_line,
                                 char** list,
-                                uint8_t list_length,
+                                uint16_t list_length,
                                 uint16_t max_used_memory,
                                 enListFileFilter filter = enListFileFilter_all,
                                 uint16_t skip_count = 0,

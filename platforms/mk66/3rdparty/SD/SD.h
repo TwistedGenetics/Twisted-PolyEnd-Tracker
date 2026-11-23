@@ -170,9 +170,9 @@ class SdDir
         enListFileFilter_game,
     };
 
-    uint16_t createFilesList(uint8_t start_line,
+    uint16_t createFilesList(uint16_t start_line,
                              char** list,
-                             uint8_t list_length,
+                             uint16_t list_length,
                              uint16_t max_used_memory,
                              enListFileFilter filter = enListFileFilter_all,
                              uint16_t skip_count = 0,

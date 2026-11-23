@@ -194,8 +194,8 @@ void SampleImport::importSamplesToWorkspaceFinish()
 
 //=================================================================================================
 //=================================================================================================
-bool SampleImport::importSamplesToProject(uint8_t fileFrom,
-                                          uint8_t fileTo,
+bool SampleImport::importSamplesToProject(uint16_t fileFrom,
+                                          uint16_t fileTo,
                                           uint8_t instrumentSlot,
                                           uint16_t dataFrom,
                                           uint16_t dataTo,

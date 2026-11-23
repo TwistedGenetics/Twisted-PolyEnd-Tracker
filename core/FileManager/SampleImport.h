@@ -12,8 +12,8 @@ class SampleImport : public FileManagerOperation
     virtual void update() override;
     virtual float getProgress() override;
 
-    bool importSamplesToProject(uint8_t fileFrom,
-                                uint8_t fileTo,
+    bool importSamplesToProject(uint16_t fileFrom,
+                                uint16_t fileTo,
                                 uint8_t instrumentSlot,
                                 uint16_t dataFrom,
                                 uint16_t dataTo,
@@ -43,9 +43,9 @@ class SampleImport : public FileManagerOperation
     int currentInstrument;
     uint8_t sampleLoadState;
 
-    uint8_t importCurrentFileIdx;
-    uint8_t importExplorerSlotFrom;
-    uint8_t importExplorerSlotTo;
+    uint16_t importCurrentFileIdx;
+    uint16_t importExplorerSlotFrom;
+    uint16_t importExplorerSlotTo;
 
     int8_t importStartSlot;
     int8_t importEndSlot;

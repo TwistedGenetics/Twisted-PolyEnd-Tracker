@@ -137,6 +137,19 @@ using the reserved FX slots R2/R3 so stock firmware ignores them.
 Code: `core/libs/Audio/play_memory_akaizer.cpp`, `core/source/mtStructs.h`
 (`akaizerSettings`), `core/interface/samplePlayback/*`, `core/AudioEngine/mtAudioSequencer.cpp`.
 
+## Faster sample browser (v1.3.0)
+
+- Folders of up to 499 samples show as one list (stock splits anything over 99
+  into `(1-99)`, `(100-198)`… groups). Larger folders split into groups of 499.
+- Each file is opened once to both validate it and size it (stock opened every
+  wav twice plus an extra directory search), and files are checked in ~12 ms
+  slices instead of one per update.
+- The bigger lists (`explorerList`, sizes) live in on-chip OCRAM on the IMX
+  targets; name allocation is `nothrow`, so a full heap ends the list early
+  instead of crashing.
+Code: `core/FileManager/fileManagerBrowse.cpp`, `platforms/*/SD.cpp`
+(`createFilesList`), `core/interface/sampleImporter/*`.
+
 ## Files
 
 | File | What |
