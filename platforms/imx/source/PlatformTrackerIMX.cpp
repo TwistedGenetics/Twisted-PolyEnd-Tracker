@@ -64,6 +64,13 @@ extern "C" void updateUsbInputBuffers(void* data, int count);
 
 extern void* _malloc_r(struct _reent* r, size_t sz);
 
+extern "C"
+{
+    void twCrashOutOfMemory(size_t size, void* caller);
+    void twCrashInit();
+    void twCrashHeartbeat();
+}
+
 bool enableMallocCheck = false;
 
 void* malloc(size_t size)
@@ -71,10 +78,8 @@ void* malloc(size_t size)
     auto ptr = _malloc_r(0, size);
     if (ptr == nullptr && enableMallocCheck) [[unlikely]]
     {
-        assert(false);
-        while (1)
-        {
-        }
+        // Twisted: record it (TwistedCrash.cpp) and restart, instead of stopping dead
+        twCrashOutOfMemory(size, __builtin_return_address(0));
     }
     return ptr;
 }
@@ -113,6 +118,8 @@ __attribute__((used)) = { 0xdeadbeef };
 
 int main(void)
 {
+    twCrashInit(); // a report from before a restart (TwistedCrash.cpp)
+
     /* Init board hardware. */
     BOARD_ConfigMPU();
     BOARD_InitBootPins();
@@ -148,6 +155,7 @@ int main(void)
 
     while (1)
     {
+        twCrashHeartbeat();
         usb->update();
         DevConsole_Update();
 #ifdef BLINK_LED_ENABLED

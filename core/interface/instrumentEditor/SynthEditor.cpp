@@ -12,6 +12,7 @@
 #include "util_math.h"
 #include "util_string.h"
 #include "engines/CraftyUser.h"
+#include "TwistedCrash.h"
 #include "Platform.h"
 #include "Tracker.h"
 
@@ -839,6 +840,7 @@ bool twIsEnvTime(const std::string& lowerName)
 
 void cInstrumentEditor::randomizeCurrentPatch(bool keepTables)
 {
+    twCrashCrumb(kCrumbRandomStart);
     int syntPartIdx = mtProject.values.lastUsedInstrument - SYNTH_INSTRUMENTS_START_IDX;
     if (syntPartIdx < 0 || syntPartIdx >= kSynthInstrumentsCount)
         return;
@@ -941,6 +943,7 @@ void cInstrumentEditor::randomizeCurrentPatch(bool keepTables)
     }
 
     // the preset first, so the engines' other values are offsets from the new preset
+    twCrashCrumb(kCrumbRandomSet);
     DISABLE_AUDIO_INTERRUPTS();
     patch.startBatchUpdate();
     for (const auto& [id, v] : values)
@@ -952,6 +955,7 @@ void cInstrumentEditor::randomizeCurrentPatch(bool keepTables)
     patch.finishBatchUpdate();
     ENABLE_AUDIO_INTERRUPTS();
 
+    twCrashCrumb(kCrumbRandomEnd);
     getSynth()->setPatchDirty(syntPartIdx);
     newFileManager.setProjectStructChanged();
     mtPopups.show(0, keepTables ? "Random patch (tables kept)" : "Random patch");

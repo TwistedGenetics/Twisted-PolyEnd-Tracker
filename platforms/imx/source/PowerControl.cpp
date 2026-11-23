@@ -76,8 +76,11 @@ void PowerControl::setLowVoltageCallback(void (*lowVoltageCallback)(void))
     this->lowVoltageCallback = lowVoltageCallback;
 }
 
+extern "C" void twCrashArm(int on);
+
 void PowerControl::turnPowerOff()
 {
+    twCrashArm(0); // Twisted: no freeze watch while the button is held for power-off
     // wait until power button released
     while (GPIO_PinRead(powerButtonGpio, powerButtonPin))
     {

@@ -13,6 +13,10 @@
 
 #include "mtAudioEngine.h"
 #include "engines/CraftyUser.h"
+#include "TwistedCrash.h"
+#include "cr_section_macros.h"
+
+#include <algorithm>
 
 #include <cmath>
 
@@ -25,6 +29,12 @@ static const int synthModelListImages[Synth::kSynthTypes.size()] = {
 };
 
 static cInstrumentEditor* IE = &instrumentEditor;
+
+// Twisted: the value lists (a CRAFTY preset list is 192 names and more) in external RAM instead of the heap,
+// which is small and was running out (the firmware stops dead when it does)
+constexpr int kTwListMax = 1024;
+__NOINIT(EXTERNAL_RAM) static char twListText[kTwListMax * 24]; // kMaxSynthListStringLen
+__NOINIT(EXTERNAL_RAM) static char* twListNames[kTwListMax];
 
 static void functSynthActionButtons(uint8_t button);
 static void functSynthPatchSaveAsKeyboardActionButtons(uint8_t button);
@@ -114,13 +124,13 @@ void cInstrumentEditor::cleanPatchEditorResources()
 
     if (paramValueListTextBuff != nullptr)
     {
-        delete[] paramValueListTextBuff;
+        paramValueListTextBuff = nullptr; // Twisted: a fixed buffer (twListText)
         paramValueListTextBuff = nullptr;
     }
 
     if (paramValueListNames != nullptr)
     {
-        delete[] paramValueListNames;
+        paramValueListNames = nullptr;
         paramValueListNames = nullptr;
     }
 }
@@ -545,6 +555,7 @@ bool cInstrumentEditor::twIsPresetParam(int paramIdx)
 
 void cInstrumentEditor::twLoadSavedFromList(int savedIdx)
 {
+    twCrashCrumb(kCrumbLoadSaved);
     int syntPartIdx = mtProject.values.lastUsedInstrument - SYNTH_INSTRUMENTS_START_IDX;
     if (savedIdx < 0 || savedIdx >= static_cast<int>(twSavedNames.size()) || savedIdx == twSavedSelected)
         return;
@@ -1017,6 +1028,7 @@ void cInstrumentEditor::setSection(int sectionIdx)
 
 void cInstrumentEditor::showSynthPatchEditorScreen()
 {
+    twCrashCrumb(kCrumbEditorShow);
     assert(mtProject.values.lastUsedInstrument >= SYNTH_INSTRUMENTS_START_IDX);
 
     showTitleBar();
@@ -1668,15 +1680,16 @@ void cInstrumentEditor::showSynthPatchSectionParamValue(bool refreshList)
         {
             if (paramValueListTextBuff != nullptr)
             {
-                delete[] paramValueListTextBuff;
+                paramValueListTextBuff = nullptr; // Twisted: a fixed buffer (twListText)
             }
 
             if (paramValueListNames != nullptr)
             {
-                delete[] paramValueListNames;
+                paramValueListNames = nullptr;
             }
 
             int length = param.maxValue + 1;
+            twCrashCrumb(kCrumbEditorList);
 
             twSavedNames.clear();
             twSavedBase = -1;
@@ -1697,8 +1710,9 @@ void cInstrumentEditor::showSynthPatchSectionParamValue(bool refreshList)
                 twSavedSelected = -1;
             }
 
-            paramValueListTextBuff = new char[length * kMaxSynthListStringLen];
-            paramValueListNames = new char*[length];
+            length = std::min(length, kTwListMax); // Twisted: lists live in external RAM, not the small heap
+            paramValueListTextBuff = twListText;
+            paramValueListNames = twListNames;
 
             auto formatter = param.valueFormatter;
 
@@ -1740,6 +1754,8 @@ void cInstrumentEditor::showSynthPatchSectionParamValue(bool refreshList)
             display.setControlData(modelListControl, &modelListData);
 
             paramValueMode = kList;
+            twCrashCrumb(kCrumbEditorListDone);
+            static_assert(kMaxSynthListStringLen == 24, "twListText's entry size");
         }
         else
         {
@@ -1870,18 +1886,19 @@ void cInstrumentEditor::showSynthPatchMacroParamValue(bool refreshList)
             {
                 if (paramValueListTextBuff != nullptr)
                 {
-                    delete[] paramValueListTextBuff;
+                    paramValueListTextBuff = nullptr; // Twisted: a fixed buffer (twListText)
                 }
 
                 if (paramValueListNames != nullptr)
                 {
-                    delete[] paramValueListNames;
+                    paramValueListNames = nullptr;
                 }
 
                 int length = patch.getMetadata().params.size() + 1;
 
-                paramValueListTextBuff = new char[length * kMaxSynthListStringLen];
-                paramValueListNames = new char*[length];
+                length = std::min(length, kTwListMax); // Twisted: lists live in external RAM, not the small heap
+            paramValueListTextBuff = twListText;
+                paramValueListNames = twListNames;
 
                 for (int idx = 0; idx < length; idx++)
                 {

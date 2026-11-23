@@ -9,6 +9,7 @@
 #include "Platform.h"
 #include "Tracker.h"
 #include "cr_section_macros.h"
+#include "TwistedCrash.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -298,6 +299,7 @@ void service(FileSystem* fs)
     {
         if (folderNext < folders)
         {
+            twCrashCrumb(kCrumbTablesWalk);
             walkFolder(fs, folderPool + folderOff[folderNext++]);
             return;
         }

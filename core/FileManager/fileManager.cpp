@@ -8,6 +8,9 @@
 
 #include "mtSequencer.h"
 
+#include "TwistedCrash.h"
+#include "Tracker.h"
+#include "core/interfacePopups.h"
 #include "engines/CraftyUser.h"
 #include "engines/DxBanks.h"
 #include "fileManager.h"
@@ -67,12 +70,44 @@ void cFileManager::init(FileSystem* fileSystem, Synth* synth, bool stereoSampleM
     this->stereoSampleMode = stereoSampleMode;
 }
 
+// Twisted: a report from a crash or freeze before this start: added to /TwistedCrash.txt, and said on screen
+static void twistedWriteCrashReport()
+{
+    static bool done = false;
+    if (done)
+        return;
+    done = true;
+    char text[600];
+    char version[24];
+    snprintf(version, sizeof(version), "v%d.%d.%d", FW_VER_MAJOR, FW_VER_MINOR, FW_VER_PATCH);
+    const int n = twCrashTakeReport(text, sizeof(text), version);
+    if (n <= 0)
+        return;
+    FileSystem* fs = Tracker::getInstance()->getPlatform()->getFileSystem();
+    if (fs != nullptr)
+    {
+        auto [isOpen, fh] = fs->openFile("/TwistedCrash.txt", fs->exists("/TwistedCrash.txt")
+                                                                 ? FileSystem::FileOpenMode::kWriteAppend
+                                                                 : FileSystem::FileOpenMode::kWriteCreateNew);
+        if (isOpen)
+        {
+            fs->writeFile(text, static_cast<size_t>(n), fh);
+            fs->closeFile(fh);
+        }
+    }
+    mtPopups.show(0, "Restarted after a freeze", "Details: TwistedCrash.txt");
+}
+
 void cFileManager::update()
 {
     twistedCraftyBuildTables(); // Twisted: CRAFTY banks, built here and not in the audio interrupt
 
+    // Twisted: the freeze watch only runs while nothing long (load, save, export) is going on
+    twCrashArm(currentOperation == fmNoOperation && !sequencer.isRenderMode());
+
     if (currentOperation == fmNoOperation && !sequencer.isRenderMode())
     {
+        twistedWriteCrashReport();
         autoSaveProjectToWorkspace();
         serviceLinkedVariations();
         twistedCraftyService(); // Twisted: CRAFTY's wavetable folder

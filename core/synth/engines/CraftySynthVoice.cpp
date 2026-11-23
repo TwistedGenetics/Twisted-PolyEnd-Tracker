@@ -17,6 +17,7 @@
 
 #include "CraftySynthVoice.h"
 #include "CraftyTables.h"
+#include "TwistedCrash.h"
 #include "CraftyUser.h"
 #include "PolySynth/sdk/SynthVoiceSDK.h"
 #include "Platform.h"
@@ -183,6 +184,7 @@ cr_inst_t* takeInstance()
             auto* in = reinterpret_cast<cr_inst_t*>(craftyPool[i]);
             for (int k = 0; k < 2; k++)
                 fileWant[i][k] = fileLoaded[i][k] = fileSeen[i][k] = 0;
+            twCrashCrumb(kCrumbCraftyInstance);
             cr_inst_init(in);
             cr_inst_set_user(in, userArea());
             craftyPoolUsed[i] = true;
@@ -233,6 +235,7 @@ void serviceFileTables(FileSystem* fs)
             if (want != 0 && !twisted_tables::known())
                 continue; // the folders haven't been walked yet: the number means nothing so far
             bool ok = false;
+            twCrashCrumb(kCrumbCraftyFileLoad);
             if (want != 0 && twisted_tables::isPresent(want))
             {
                 char path[340];
@@ -241,6 +244,7 @@ void serviceFileTables(FileSystem* fs)
             }
             fileLoaded[i][k] = want;
             cr_inst_file_table(in, static_cast<uint32_t>(k), ok ? fileWaves[i][k] : nullptr);
+            twCrashCrumb(kCrumbCraftyFileDone);
             return; // one file a call
         }
     }
@@ -608,7 +612,10 @@ void craftyBuildTablesImpl()
     {
         auto* in = reinterpret_cast<cr_inst_t*>(craftyPool[i]);
         if (craftyPoolUsed[i] && cr_inst_tables_pending(in))
+        {
+            twCrashCrumb(kCrumbCraftyTables);
             cr_inst_tables(in);
+        }
     }
 }
 
@@ -627,6 +634,7 @@ void craftyServiceImpl()
             return;
         scan.requested = false;
         scan.stage = 1;
+        twCrashCrumb(kCrumbCraftyScan);
     }
 
     if (scan.stage == 1)
@@ -696,6 +704,7 @@ void craftyServiceImpl()
         scan.bank++;
     if (scan.next < scan.count && scan.bank < static_cast<int>(CR_NUBANK))
     {
+        twCrashCrumb(kCrumbCraftyImport);
         if (importWav(fs, scan.names[scan.next], static_cast<uint32_t>(scan.bank)))
             scan.bank++;
         scan.next++;

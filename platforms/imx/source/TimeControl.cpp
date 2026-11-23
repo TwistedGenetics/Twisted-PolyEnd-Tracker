@@ -135,9 +135,22 @@ void delayMicroseconds(uint32_t valueUs)
 
 extern "C"
 {
-    void SysTick_Handler()
+    void twCrashTick(uint32_t* frame); // TwistedCrash.cpp: the freeze watch
+
+    __attribute__((used)) void twSysTickBody(uint32_t* frame)
     {
         msTicks++;
         cyclesTicks = DWT->CYCCNT;
+        twCrashTick(frame);
+    }
+
+    // Twisted: hands the interrupted code's stacked registers to the freeze watch
+    __attribute__((naked)) void SysTick_Handler()
+    {
+        __asm volatile("tst lr, #4\n"
+                       "ite eq\n"
+                       "mrseq r0, msp\n"
+                       "mrsne r0, psp\n"
+                       "b twSysTickBody\n");
     }
 }

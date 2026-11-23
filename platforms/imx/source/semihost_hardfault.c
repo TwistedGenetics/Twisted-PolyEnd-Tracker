@@ -54,6 +54,8 @@
 // ****************************************************************************
 
 // Allow handler to be removed by setting a define (via command line)
+// Twisted: HardFault_Handler is in TwistedCrash.cpp (records the fault and restarts)
+#define __SEMIHOST_HARDFAULT_DISABLE
 #if !defined (__SEMIHOST_HARDFAULT_DISABLE)
 
 __attribute__((naked))
