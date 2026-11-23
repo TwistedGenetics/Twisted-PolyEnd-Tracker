@@ -473,8 +473,24 @@ void dxService()
             fs->mkdir(0, kDxFolder);
         for (auto& n : dxNames)
             n = nullptr;
-        const int found = fs->createFilesList(kDxFolder, 0, dxNames, 64, 4000, FileSystem::enListFileFilter_all);
+        static bool scannedOnce = false;
+        static uint32_t lastSignature = 0;
+        uint32_t signature = 0;
+        const int found = fs->createFilesList(kDxFolder, 0, dxNames, 64, 4000, FileSystem::enListFileFilter_all, 0, 0,
+                                              FileSystem::enListFileFilter_all, &signature);
         dxNameCount = found > 0 ? found : 0;
+        if (scannedOnce && signature == lastSignature) // the folder hasn't changed: the banks are already in
+        {
+            for (int i = 0; i < dxNameCount; i++)
+            {
+                delete[] dxNames[i];
+                dxNames[i] = nullptr;
+            }
+            dxNameCount = 0;
+            return;
+        }
+        scannedOnce = true;
+        lastSignature = signature;
         std::sort(dxNames, dxNames + dxNameCount, dxNameLess);
         dxNext = 0;
         dxBankLoading = 0;

@@ -294,6 +294,7 @@ struct Scan
     int stage = 0;         // 0 idle, 1 start, 2 one file at a time
     char* names[kMaxFiles] = {};
     int count = 0, next = 0, bank = 0;
+    uint32_t signature = 0; // the folder and user file as last read
 } scan;
 
 struct WavInfo
@@ -537,12 +538,48 @@ void craftyServiceImpl()
 
     if (scan.stage == 1)
     {
-        // start: an empty user area, the plugin's user file if there is one, then the folder's list
-        std::memset(craftyUser, 0xFF, sizeof(craftyUser));
+        // First the folder's list and the user file's size: when neither changed since the last read, there's
+        // nothing to do. (A scan is asked for whenever a CRAFTY voice is made, which happens a lot while
+        // you move around the menus: re-reading the user file and re-importing every table each time stalled
+        // the Tracker for seconds and rewrote the user area under the voices that were playing.)
         if (!fs->exists(kCraftyFolder))
             fs->mkdir(0, kCraftyFolder);
         if (!fs->exists(kCraftyTables))
             fs->mkdir(0, kCraftyTables);
+        for (auto& n : scan.names)
+            n = nullptr;
+        uint32_t signature = 0;
+        const int found = fs->createFilesList(kCraftyTables, 0, scan.names, kMaxFiles, 6000,
+                                              FileSystem::enListFileFilter_wave, 0, 0,
+                                              FileSystem::enListFileFilter_wave, &signature);
+        scan.count = found > 0 ? found : 0;
+        if (fs->exists(kCraftyUserFile))
+        {
+            auto [isOpen, fh] = fs->openFile(kCraftyUserFile, FileSystem::FileOpenMode::kRead);
+            if (isOpen)
+            {
+                signature = (signature ^ static_cast<uint32_t>(fs->getFileSize(fh))) * 16777619u;
+                fs->closeFile(fh);
+            }
+        }
+        else
+        {
+            signature = (signature ^ 0xA5A5A5A5u) * 16777619u;
+        }
+        if (craftyUserReady && signature == scan.signature)
+        {
+            for (int i = 0; i < scan.count; i++)
+            {
+                delete[] scan.names[i];
+                scan.names[i] = nullptr;
+            }
+            scan.stage = 0;
+            return;
+        }
+        scan.signature = signature;
+
+        // changed: an empty user area, the plugin's user file if there is one, then the folder's tables
+        std::memset(craftyUser, 0xFF, sizeof(craftyUser));
         if (fs->exists(kCraftyUserFile))
         {
             auto [isOpen, fh] = fs->openFile(kCraftyUserFile, FileSystem::FileOpenMode::kRead);
@@ -554,11 +591,6 @@ void craftyServiceImpl()
                 fs->closeFile(fh);
             }
         }
-        for (auto& n : scan.names)
-            n = nullptr;
-        const int found = fs->createFilesList(kCraftyTables, 0, scan.names, kMaxFiles, 6000,
-                                              FileSystem::enListFileFilter_wave);
-        scan.count = found > 0 ? found : 0;
         std::sort(scan.names, scan.names + scan.count, nameLess);
         scan.next = 0;
         scan.bank = 0;
