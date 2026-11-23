@@ -8,6 +8,7 @@
 
 #include "mtSequencer.h"
 
+#include "engines/CraftyUser.h"
 #include "fileManager.h"
 #include "fileTransfer.h"
 #include "instrumentFileValidation.h"
@@ -71,6 +72,7 @@ void cFileManager::update()
     {
         autoSaveProjectToWorkspace();
         serviceLinkedVariations();
+        twistedCraftyService(); // Twisted: CRAFTY's wavetable folder
 
         return;
     }

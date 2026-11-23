@@ -202,7 +202,7 @@
     <b>Firmware:</b> Twisted PolyEnd Tracker, based on Polyend Tracker Community Edition 1.0.0<br>
     <b>For:</b> Tracker+ (the original Tracker builds too; the Tracker Mini has no song tools)<br>
     <b>Repository:</b> github.com/TwistedGenetics/Twisted-PolyEnd-Tracker<br>
-    <b>Manual version:</b> 1.8 · November 2026
+    <b>Manual version:</b> 1.9 · November 2026
   </div>
 </div>
 
@@ -724,15 +724,20 @@
     <tr><td>Cutoff / Resonance</td><td>A 24 dB ladder low-pass, 30 Hz to 16 kHz.</td></tr>
     <tr><td>Drive</td><td>Distortion before the filter, on everything except the sub.</td></tr>
     <tr><td>Notch Sweep</td><td>A slowly swept notch comb for the hollow, flanging movement.</td></tr>
-    <tr><td>Filter Env</td><td>How much the envelope opens (or closes) the filter.</td></tr>
+    <tr><td>Filter Env</td><td>How much the filter envelope opens (or closes) the filter.</td></tr>
+    <tr><td>Filter Attack / Decay / Sustain / Release</td><td>The filter envelope's own shape. A preset starts it from the amp envelope's attack, decay and release, with no sustain (the sound DREADNOUGHT had).</td></tr>
     <tr><td>Attack / Decay / Sustain / Release</td><td>The volume envelope.</td></tr>
-    <tr><td>LFO Rate / LFO &gt; Cutoff</td><td>A sine wobble on the cutoff.</td></tr>
+    <tr><td>LFO Shape</td><td>Sine, Triangle, Saw Up, Saw Down, Square or S&amp;H (a new random value each cycle).</td></tr>
+    <tr><td>LFO Rate / LFO &gt; Cutoff</td><td>The LFO's speed (0.05–20 Hz) and how far it moves the cutoff.</td></tr>
+    <tr><td>LFO Key Reset</td><td><b>On</b>: the LFO restarts from the top of its cycle on every key press, so every note wobbles the same. <b>Off</b>: it runs freely.</td></tr>
+    <tr><td>Dist Type / Distortion</td><td>Distortion after the filter: <b>Soft</b> (warm, tube-like), <b>Hard</b> (clipped), <b>Fold</b> (wavefolder, metallic) or <b>Crush</b> (fewer bits). The sub isn't distorted, so the low end stays clean. The level stays about the same as you turn it up.</td></tr>
+    <tr><td>Chorus / Chorus Rate / Chorus Depth</td><td>A stereo chorus for width. The sub stays in the centre.</td></tr>
     <tr><td>Glide / Glide Mode</td><td>Slide between notes. <b>Always</b> slides into every note while the last one is still sounding; <b>Legato</b> only when notes overlap.</td></tr>
     <tr><td>Transpose</td><td>±36 semitones. 0 plays the note you enter (Hoover sits an octave up).</td></tr>
     <tr><td>Velocity</td><td>How much velocity changes the volume.</td></tr>
     <tr><td>Gain</td><td>Output level.</td></tr>
   </table>
-  <p>The six default macros are Cutoff, Detune, Notch Sweep, Drive, Resonance and Wobble.</p>
+  <p>The pages are Oscillators, Filter, Filter Envelope, Amp Envelope, LFO, Glide, Voice and FX. The six default macros are Cutoff, Detune, Notch Sweep, Drive, Resonance and Wobble.</p>
   <div class="note"><b>Mono by design</b>REESE plays one note at a time, like the real thing, so glides and legato lines behave. Use a second SYN slot for a second Reese.</div>
 </section>
 
@@ -766,8 +771,21 @@
     <tr><td>Effects</td><td>Distortion and delay; the reverb; chorus, phaser, EraCrush and OTT</td></tr>
   </table>
   <p>The six default macros are Cutoff, Wave Position, Osc Mod, Resonance, Distortion and Reverb.</p>
-  <div class="note"><b>Memory</b>Each CRAFTY instrument needs about 190 KB for its wavetables and effects. To make room, the sample memory is 768 KB smaller than before (about 59 MB). A project that filled the sample memory to the last few hundred KB may not fit all its samples any more.</div>
-  <div class="note"><b>Not yet</b>User wavetable banks (Serum import) and user presets from the FM-1 aren't loaded yet: CRAFTY has the 9 factory banks and the 64 factory presets. Save your own sounds as Tracker synth patches.</div>
+  <div class="note"><b>Memory</b>Each CRAFTY instrument needs about 190 KB for its wavetables and effects, plus 190 KB shared for your user banks. To make room, the sample memory is 960 KB smaller than the stock firmware's (about 59 MB). A project that filled the sample memory to the last few hundred KB may not fit all its samples any more.</div>
+  <h3>Your own wavetables</h3>
+  <p>CRAFTY reads wavetables from a folder on the SD card, like the Crafty Synth editor's Serum import.</p>
+  <ol class="steps">
+    <li>Put WAV wavetables in the folder <code>/Crafty/Wavetables</code> on the SD card. The Tracker makes the folder the first time you use CRAFTY. Serum and Vital wavetables work, and so does any single-cycle WAV.</li>
+    <li>Choose CRAFTY on a SYN slot, or load a project that uses it. The folder is read then, in the background.</li>
+    <li>On the Oscillators page, turn <b>Bank 1</b> or <b>Bank 2</b> past the factory banks. Your tables are <b>USER 1</b>, <b>USER 2</b>… in name order, shown by their file names.</li>
+  </ol>
+  <ul>
+    <li>Each table becomes a bank of 5 waves picked evenly through it, as the editor does: the first frame, the last, and three between. Wave 1 / Wave 2 morph through them.</li>
+    <li>Up to 32 user banks. Frames up to 4096 samples long; 8, 16, 24 and 32-bit WAVs (and 32-bit float).</li>
+    <li>Added files show up the next time you choose CRAFTY or load a project with it.</li>
+  </ul>
+  <h3>Your FM-1 / plugin presets and banks</h3>
+  <p>Copy the plugin's user file to <code>/Crafty/Crafty Synth.user</code>. Its 128 user presets show up after the factory ones (<b>U1-1</b> to <b>U16-8</b>), and its user banks come first; the folder's tables fill the banks it leaves free.</p>
 </section>
 
 <!-- ============================================================ 10 -->
@@ -814,6 +832,7 @@
     <tr><td><b>Not enough sample memory</b></td><td>The cropped part won't fit in the remaining sample memory. Free some memory, or crop a shorter part.</td></tr>
     <tr><td><b>Set Start and End first</b></td><td>Start and End are on top of each other, so there's nothing to copy.</td></tr>
     <tr><td>No colour behind the track names</td><td>Only coloured tracks show one. If no names show at all, set <b>Pattern info</b> in Config back to show them.</td></tr>
+    <tr><td>My wavetables don't show as USER banks</td><td>Check they're WAV files in <code>/Crafty/Wavetables</code> (not a sub-folder), then choose CRAFTY again or reload the project. Files with frames longer than 4096 samples, or unreadable WAVs, are skipped.</td></tr>
     <tr><td>A CRAFTY instrument is silent</td><td>Up to four CRAFTY instruments can play at once (there are only three SYN slots, so this shouldn't happen). Choose the model again or reload the project.</td></tr>
     <tr><td>Insert doesn't open the tools</td><td>Check that you're running the Twisted firmware and are on the Song screen. The Tracker Mini has no song tools.</td></tr>
   </table>

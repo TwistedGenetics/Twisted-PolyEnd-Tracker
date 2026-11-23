@@ -53,27 +53,41 @@ enum class ReeseParamId : int
     kTranspose,
     kVelocity,
     kVolume,
+    // v1.7 (appended: saved patches keep their parameter ids)
+    kFilterAttack,
+    kFilterDecay,
+    kFilterSustain,
+    kFilterRelease,
+    kLfoShape,
+    kLfoRetrig,
+    kDistType,
+    kDistAmount,
+    kChorusMix,
+    kChorusRate,
+    kChorusDepth,
 };
 
 // the DREADNOUGHT patch values (0..127 unless noted)
 enum
 {
     RP_OSC, RP_DTN, RP_BEAT, RP_SUB, RP_CUT, RP_RES, RP_DRV, RP_NTCH,
-    RP_ATK, RP_DEC, RP_SUS, RP_REL, RP_FENV, RP_GLIDE, RP_LRATE, RP_LFLT, RP_TRANS, RP_COUNT
+    RP_ATK, RP_DEC, RP_SUS, RP_REL, RP_FENV, RP_GLIDE, RP_LRATE, RP_LFLT, RP_TRANS,
+    RP_FA, RP_FD, RP_FS, RP_FR, // the filter envelope (a preset starts it as the amp's A, D, no sustain, the amp's R)
+    RP_COUNT
 };
 enum
 {
     RO_2SAW, RO_3SAW, RO_5SAW, RO_7SAW, RO_SAWSQ, RO_2SIN, RO_N
 };
 
-constexpr int kMinV[RP_COUNT] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -64, 0, 0, -64, -36 };
+constexpr int kMinV[RP_COUNT] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -64, 0, 0, -64, -36, 0, 0, 0, 0 };
 constexpr int kMaxV[RP_COUNT] = { RO_N - 1, 127, 7, 127, 127, 127, 127, 127, 127,
-                                  127, 127, 127, 63, 127, 127, 63, 36 };
+                                  127, 127, 127, 63, 127, 127, 63, 36, 127, 127, 127, 127 };
 
 struct ReesePreset
 {
     const char* name;
-    int8_t v[RP_COUNT];
+    int8_t v[RP_TRANS + 1];
 };
 
 // DREADNOUGHT's REESE presets: OSC DTN BEAT SUB CUT RES DRV NTCH ATK DEC SUS REL FENV GLIDE LRATE LFLT TRANS
@@ -91,6 +105,22 @@ constexpr std::array<ReesePreset, 10> kPresets = { {
 } };
 
 constexpr std::array<const char*, RO_N> kOscNames = { "2 Saw", "3 Saw", "5 Saw", "7 Saw", "Saw+Sq", "2 Sine" };
+// a preset's value of a patch item; the filter envelope follows the preset's amp envelope
+inline int presetBase(const ReesePreset& pr, int rp)
+{
+    switch (rp)
+    {
+        case RP_FA: return pr.v[RP_ATK];
+        case RP_FD: return pr.v[RP_DEC];
+        case RP_FS: return 0;
+        case RP_FR: return pr.v[RP_REL];
+        default: return pr.v[rp];
+    }
+}
+
+constexpr std::array<const char*, 6> kLfoShapeNames = { "Sine", "Triangle", "Saw Up", "Saw Down", "Square", "S&H" };
+constexpr std::array<const char*, 4> kDistNames = { "Soft", "Hard", "Fold", "Crush" };
+
 constexpr std::array<const char*, 8> kBeatNames = { "Off", "1/1", "1/2", "1/4", "1/8", "1/16", "1/4T", "1/8T" };
 constexpr uint8_t kBeat4[8] = { 0, 1, 2, 4, 8, 16, 6, 12 }; // the beat in quarter notes x 4
 
@@ -166,7 +196,7 @@ int presetIndex(const Patch& patch)
 // a value as it ends up: the preset's plus the knob's offset
 int finalValue(const Patch& patch, int rp, float offset)
 {
-    return std::clamp<int>(kPresets[presetIndex(patch)].v[rp] + static_cast<int>(std::lround(offset)),
+    return std::clamp<int>(presetBase(kPresets[presetIndex(patch)], rp) + static_cast<int>(std::lround(offset)),
                            kMinV[rp],
                            kMaxV[rp]);
 }
@@ -202,6 +232,11 @@ class ReeseSynthVoice : public sdk::CustomSynthVoice<ReeseSynthVoice, ReeseParam
     {
         vel = velocity;
         target = static_cast<float>(note) + static_cast<float>(p[RP_TRANS] + 24) + transpose;
+        if (lfoRetrig) // the LFO restarts on every key press
+        {
+            lfoPh = 0.0f;
+            lfoHold = static_cast<float>(static_cast<int32_t>(nextRand() >> 16) - 32768) / 32768.0f;
+        }
         const bool slide = p[RP_GLIDE] > 0 && active && (isLegatoStep ? gate : glideAlways);
         if (slide)
         {
@@ -244,6 +279,7 @@ class ReeseSynthVoice : public sdk::CustomSynthVoice<ReeseSynthVoice, ReeseParam
                           std::span<AudioBufferRef> /*auxOutBuffer*/) final
     {
         auto out = outputBuffer[0];
+        auto outR = outputBuffer[1];
         bpm = ctx.tempo > 1.0f ? ctx.tempo : 120.0f;
 
         size_t i = 0;
@@ -259,10 +295,11 @@ class ReeseSynthVoice : public sdk::CustomSynthVoice<ReeseSynthVoice, ReeseParam
             if (!active && ampNow <= 0.0f && ampNext <= 0.0f)
             {
                 std::fill(out.begin() + i, out.begin() + i + len, 0.0f);
+                std::fill(outR.begin() + i, outR.begin() + i + len, 0.0f);
             }
             else
             {
-                renderBlock(&out[i], static_cast<int>(len));
+                renderBlock(&out[i], &outR[i], static_cast<int>(len));
             }
             ctl -= static_cast<int>(len);
             i += len;
@@ -305,6 +342,27 @@ class ReeseSynthVoice : public sdk::CustomSynthVoice<ReeseSynthVoice, ReeseParam
     uint32_t combPh = 0;
     uint32_t rng = 0x5EE5Eu;
 
+    // LFO shape, distortion, chorus
+    int lfoShape = 0;
+    bool lfoRetrig = false;
+    float lfoHold = 0.0f;
+    int distType = 0;
+    float distAmount = 0.0f;
+    static constexpr int kChorusLen = 1024;
+    float chorus[kChorusLen] = {};
+    uint32_t chorusW = 0;
+    float chorusPh = 0.0f, chorusInc = 0.0f;
+    float chorusMix = 0.0f, chorusDepth = 0.5f;
+
+    inline float chorusTap(float d) const
+    {
+        const int di = static_cast<int>(d);
+        const float fr = d - di;
+        const float a = chorus[(chorusW - di) & (kChorusLen - 1)];
+        const float b = chorus[(chorusW - di - 1) & (kChorusLen - 1)];
+        return a + (b - a) * fr;
+    }
+
     // per tick
     float inc[7] = {};
     float subInc = 0.0f;
@@ -325,7 +383,7 @@ class ReeseSynthVoice : public sdk::CustomSynthVoice<ReeseSynthVoice, ReeseParam
         const ReesePreset& pr = kPresets[std::clamp(preset, 0, static_cast<int>(kPresets.size()) - 1)];
         for (int k = 0; k < RP_COUNT; k++)
         {
-            p[k] = std::clamp<int>(pr.v[k] + static_cast<int>(std::lround(off[k])), kMinV[k], kMaxV[k]);
+            p[k] = std::clamp<int>(presetBase(pr, k) + static_cast<int>(std::lround(off[k])), kMinV[k], kMaxV[k]);
         }
         if (oscSel > 0)
             p[RP_OSC] = oscSel - 1;
@@ -361,19 +419,19 @@ class ReeseSynthVoice : public sdk::CustomSynthVoice<ReeseSynthVoice, ReeseParam
                 break;
             default: break;
         }
-        // the filter envelope: the amp's attack and decay, no sustain, the amp's release
+        // the filter envelope: its own attack, decay, sustain and release
         switch (fstage)
         {
             case 1:
-                fenv += (1.25f - fenv) * tickCoef(p[RP_ATK]);
+                fenv += (1.25f - fenv) * tickCoef(p[RP_FA]);
                 if (fenv >= 1.0f)
                 {
                     fenv = 1.0f;
                     fstage = 2;
                 }
                 break;
-            case 2: fenv -= fenv * tickCoef(p[RP_DEC]); break;
-            case 3: fenv -= fenv * tickCoef(p[RP_REL]); break;
+            case 2: fenv += (p[RP_FS] / 127.0f - fenv) * tickCoef(p[RP_FD]); break;
+            case 3: fenv -= fenv * tickCoef(p[RP_FR]); break;
             default: break;
         }
         // glide
@@ -423,8 +481,21 @@ class ReeseSynthVoice : public sdk::CustomSynthVoice<ReeseSynthVoice, ReeseParam
             }
         }
         // the filter LFO (a sine) and the cutoff
-        lfoPh = wrap01(lfoPh + lfoHz(p[RP_LRATE]) * kCtl / kSr);
-        const float lfo = p[RP_LFLT] ? sdk::fastSine(lfoPh) * p[RP_LFLT] * 2.0f : 0.0f;
+        const float nextPh = lfoPh + lfoHz(p[RP_LRATE]) * kCtl / kSr;
+        if (nextPh >= 1.0f) // a new cycle: S&H takes a new value
+            lfoHold = static_cast<float>(static_cast<int32_t>(nextRand() >> 16) - 32768) / 32768.0f;
+        lfoPh = wrap01(nextPh);
+        float shape = 0.0f;
+        switch (lfoShape)
+        {
+            case 1: shape = lfoPh < 0.5f ? 4.0f * lfoPh - 1.0f : 3.0f - 4.0f * lfoPh; break; // triangle
+            case 2: shape = 2.0f * lfoPh - 1.0f; break;                                       // saw up
+            case 3: shape = 1.0f - 2.0f * lfoPh; break;                                       // saw down
+            case 4: shape = lfoPh < 0.5f ? 1.0f : -1.0f; break;                               // square
+            case 5: shape = lfoHold; break;                                                   // sample & hold
+            default: shape = sdk::fastSine(lfoPh); break;
+        }
+        const float lfo = p[RP_LFLT] ? shape * p[RP_LFLT] * 2.0f : 0.0f;
         const float steps = static_cast<float>(p[RP_CUT]) + fenv * p[RP_FENV] + lfo;
         const float g = std::tan(3.14159265f * std::min(cutoffHz(steps), 18000.0f) / kSr);
         ladG = std::min(g / (1.0f + g), 0.75f);
@@ -471,7 +542,32 @@ class ReeseSynthVoice : public sdk::CustomSynthVoice<ReeseSynthVoice, ReeseParam
         return u;
     }
 
-    void renderBlock(float* out, int len)
+    // the distortion after the filter (the sub stays clean)
+    inline float distort(float x) const
+    {
+        if (distAmount <= 0.0f)
+            return x;
+        const float g = 1.0f + distAmount * 15.0f;
+        float w;
+        switch (distType)
+        {
+            case 1: w = std::clamp(x * g, -0.9f, 0.9f); break;                     // hard clip
+            case 2: w = sdk::fastSine(0.25f * softClip(x * g * 0.5f) * 2.0f); break; // wavefold
+            case 3:                                                                // bit crush
+            {
+                const float steps = std::pow(2.0f, 12.0f - distAmount * 9.0f);
+                w = std::round(softClip(x * (1.0f + distAmount * 3.0f)) * steps) / steps;
+                break;
+            }
+            default: w = softClip(x * g); break;                                  // soft (tube-ish)
+        }
+        // keep the level about the same as the amount goes up
+        w *= (distType <= 1) ? 1.0f / (1.0f + distAmount * 1.4f) : 1.0f / (1.0f + distAmount * 0.65f);
+        const float mix = std::min(1.0f, distAmount * 4.0f);
+        return x + (w - x) * mix;
+    }
+
+    void renderBlock(float* out, float* outR, int len)
     {
         const int mode = p[RP_OSC];
         const int no = kOscCount[mode];
@@ -531,16 +627,34 @@ class ReeseSynthVoice : public sdk::CustomSynthVoice<ReeseSynthVoice, ReeseParam
                 y -= (a + (b - a) * fr) * hol;
                 combPh += crate;
             }
-            // the sub: a clean sine on the fundamental, added last
-            float s = y;
+            y = distort(y);
+            const float amp = ampNow + da * static_cast<float>(pos0 + i);
+            const float r = std::clamp(y, -1.83f, 1.83f) * amp * 0.49f * volume;
+            // the chorus: two delay taps swept a quarter cycle apart, left and right
+            float l = r, rr = r;
+            if (chorusMix > 0.0f)
+            {
+                chorus[chorusW & (kChorusLen - 1)] = r;
+                const float baseD = 0.007f * kSr, swing = chorusDepth * 0.006f * kSr;
+                const float dl = baseD + swing * (0.5f + 0.5f * sdk::fastSine(chorusPh));
+                const float dr = baseD + swing * (0.5f + 0.5f * sdk::fastSine(chorusPh + 0.25f));
+                const float wl = chorusTap(dl), wr = chorusTap(dr);
+                chorusW++;
+                chorusPh += chorusInc;
+                if (chorusPh >= 1.0f)
+                    chorusPh -= 1.0f;
+                l = r * (1.0f - 0.5f * chorusMix) + wl * chorusMix * 0.8f;
+                rr = r * (1.0f - 0.5f * chorusMix) + wr * chorusMix * 0.8f;
+            }
+            // the sub: a clean mono sine on the fundamental, added last
+            float sb = 0.0f;
             if (sub > 0.0f)
-                s += sdk::fastSine(subPh) * sub;
+                sb = sdk::fastSine(subPh) * sub * amp * 0.49f * volume;
             subPh += subInc;
             if (subPh >= 1.0f)
                 subPh -= 1.0f;
-            s = std::clamp(s, -1.83f, 1.83f);
-            const float amp = ampNow + da * static_cast<float>(pos0 + i);
-            out[i] = s * amp * 0.49f * volume;
+            out[i] = l + sb;
+            outR[i] = rr + sb;
         }
         for (int j = no; j < 7; j++)
             ph[j] = wrap01(ph[j] + inc[0] * len);
@@ -572,6 +686,13 @@ class ReeseSynthVoice : public sdk::CustomSynthVoice<ReeseSynthVoice, ReeseParam
     static void setTranspose(ReeseSynthVoice& v, float x) { v.transpose = std::round(x); }
     static void setVelocity(ReeseSynthVoice& v, float x) { v.velSens = std::clamp(x, 0.0f, 1.0f); }
     static void setVolume(ReeseSynthVoice& v, float x) { v.volume = sdk::dbToAmplitude(x); }
+    static void setLfoShape(ReeseSynthVoice& v, float x) { v.lfoShape = std::clamp<int>(std::lround(x), 0, 5); }
+    static void setLfoRetrig(ReeseSynthVoice& v, float x) { v.lfoRetrig = std::lround(x) != 0; }
+    static void setDistType(ReeseSynthVoice& v, float x) { v.distType = std::clamp<int>(std::lround(x), 0, 3); }
+    static void setDistAmount(ReeseSynthVoice& v, float x) { v.distAmount = std::clamp(x, 0.0f, 1.0f); }
+    static void setChorusMix(ReeseSynthVoice& v, float x) { v.chorusMix = std::clamp(x, 0.0f, 1.0f); }
+    static void setChorusRate(ReeseSynthVoice& v, float x) { v.chorusInc = std::clamp(x, 0.05f, 8.0f) / kSr; }
+    static void setChorusDepth(ReeseSynthVoice& v, float x) { v.chorusDepth = std::clamp(x, 0.0f, 1.0f); }
 };
 
 // an offset knob: moves a preset value, shows where it ends up
@@ -606,7 +727,10 @@ Patch::Metadata::Param offsetParam(const char* name, uint8_t cc, std::string (*t
                 }
                 case RP_ATK:
                 case RP_DEC:
-                case RP_REL: return msText(v);
+                case RP_REL:
+                case RP_FA:
+                case RP_FD:
+                case RP_FR: return msText(v);
                 case RP_GLIDE:
                     if (v == 0)
                         return "Off";
@@ -615,6 +739,7 @@ Patch::Metadata::Param offsetParam(const char* name, uint8_t cc, std::string (*t
                     snprintf(b, sizeof(b), "%.2f Hz", static_cast<double>(lfoHz(v)));
                     return b;
                 case RP_SUS:
+                case RP_FS:
                 case RP_SUB:
                 case RP_RES:
                 case RP_DRV:
@@ -798,6 +923,99 @@ void ReeseSynthVoice::createMetadata(const Patch& /*patch*/, Patch::Metadata& me
       },
       [](auto& v, Patch::optional_paramvalue_t val) { ReeseSynthVoice::setVolume(v, *val); });
 
+    // v1.7: the filter envelope, LFO shape and retrigger, distortion, chorus
+    helper.addParam(*P::kFilterAttack,
+                    offsetParam<RP_FA>("Filter Attack", *MidiCCs::kFilterEnvAttack, nullptr),
+                    [](auto& v, Patch::optional_paramvalue_t val) { ReeseSynthVoice::setOffset(v, RP_FA, *val); });
+    helper.addParam(*P::kFilterDecay,
+                    offsetParam<RP_FD>("Filter Decay", *MidiCCs::kFilterEnvDecay, nullptr),
+                    [](auto& v, Patch::optional_paramvalue_t val) { ReeseSynthVoice::setOffset(v, RP_FD, *val); });
+    helper.addParam(*P::kFilterSustain,
+                    offsetParam<RP_FS>("Filter Sustain", *MidiCCs::kFilterEnvSustain, nullptr),
+                    [](auto& v, Patch::optional_paramvalue_t val) { ReeseSynthVoice::setOffset(v, RP_FS, *val); });
+    helper.addParam(*P::kFilterRelease,
+                    offsetParam<RP_FR>("Filter Release", *MidiCCs::kFilterEnvRelease, nullptr),
+                    [](auto& v, Patch::optional_paramvalue_t val) { ReeseSynthVoice::setOffset(v, RP_FR, *val); });
+    helper.addParam(
+      *P::kLfoShape,
+      {
+        .displayName = "LFO Shape",
+        .defaultValue = 0,
+        .minValue = 0,
+        .maxValue = 5,
+        .isEnum = true,
+        .midiCC = static_cast<uint8_t>(*MidiCCs::kOscParam0 + 10),
+        .valueFormatter = [](const Patch&, Patch::paramvalue_t value)
+        { return std::string(kLfoShapeNames[std::clamp<int>(std::lround(value), 0, 5)]); },
+      },
+      [](auto& v, Patch::optional_paramvalue_t val) { ReeseSynthVoice::setLfoShape(v, *val); });
+    helper.addParam(
+      *P::kLfoRetrig,
+      {
+        .displayName = "LFO Key Reset",
+        .defaultValue = 0,
+        .minValue = 0,
+        .maxValue = 1,
+        .isEnum = true,
+        .midiCC = static_cast<uint8_t>(*MidiCCs::kOscParam0 + 11),
+        .valueFormatter = [](const Patch&, Patch::paramvalue_t value)
+        { return std::string(std::lround(value) ? "On" : "Off (Free)"); },
+      },
+      [](auto& v, Patch::optional_paramvalue_t val) { ReeseSynthVoice::setLfoRetrig(v, *val); });
+    helper.addParam(
+      *P::kDistType,
+      {
+        .displayName = "Dist Type",
+        .defaultValue = 0,
+        .minValue = 0,
+        .maxValue = 3,
+        .isEnum = true,
+        .valueFormatter = [](const Patch&, Patch::paramvalue_t value)
+        { return std::string(kDistNames[std::clamp<int>(std::lround(value), 0, 3)]); },
+      },
+      [](auto& v, Patch::optional_paramvalue_t val) { ReeseSynthVoice::setDistType(v, *val); });
+    helper.addParam(
+      *P::kDistAmount,
+      {
+        .displayName = "Distortion",
+        .defaultValue = 0.0f,
+        .minValue = 0,
+        .maxValue = 1,
+        .valueFormatter = createPercentFormatter(),
+      },
+      [](auto& v, Patch::optional_paramvalue_t val) { ReeseSynthVoice::setDistAmount(v, *val); });
+    helper.addParam(
+      *P::kChorusMix,
+      {
+        .displayName = "Chorus",
+        .defaultValue = 0.0f,
+        .minValue = 0,
+        .maxValue = 1,
+        .valueFormatter = createPercentFormatter(),
+      },
+      [](auto& v, Patch::optional_paramvalue_t val) { ReeseSynthVoice::setChorusMix(v, *val); });
+    helper.addParam(
+      *P::kChorusRate,
+      {
+        .displayName = "Chorus Rate",
+        .defaultValue = 0.6f,
+        .minValue = 0.05f,
+        .maxValue = 8,
+        .editCurve = Param::Curve::kExponential,
+        .valueFormatter = createFrequencyFormatter(),
+      },
+      [](auto& v, Patch::optional_paramvalue_t val) { ReeseSynthVoice::setChorusRate(v, *val); });
+    helper.addParam(
+      *P::kChorusDepth,
+      {
+        .displayName = "Chorus Depth",
+        .defaultValue = 0.5f,
+        .minValue = 0,
+        .maxValue = 1,
+        .valueFormatter = createPercentFormatter(),
+      },
+      [](auto& v, Patch::optional_paramvalue_t val) { ReeseSynthVoice::setChorusDepth(v, *val); });
+
     using EditorElement = Patch::Metadata::EditorLayout::EditorElement;
     auto e = [](P id) { return EditorElement{ .type = EditorElement::Type::kParam, .id = *id }; };
 
@@ -807,10 +1025,17 @@ void ReeseSynthVoice::createMetadata(const Patch& /*patch*/, Patch::Metadata& me
             .elements = { e(P::kPreset), e(P::kOsc), e(P::kDetune), e(P::kBeat), e(P::kSub) } },
           { .name = "Filter", .shortName = "Filter",
             .elements = { e(P::kCutoff), e(P::kResonance), e(P::kDrive), e(P::kNotch), e(P::kFilterEnv) } },
-          { .name = "Amplifier", .shortName = "Amp",
+          { .name = "Filter Envelope", .shortName = "Filt Env",
+            .elements = { e(P::kFilterAttack), e(P::kFilterDecay), e(P::kFilterSustain), e(P::kFilterRelease) } },
+          { .name = "Amp Envelope", .shortName = "Amp Env",
             .elements = { e(P::kAttack), e(P::kDecay), e(P::kSustain), e(P::kRelease) } },
-          { .name = "Modulation", .shortName = "Mod",
-            .elements = { e(P::kLfoRate), e(P::kLfoDepth), e(P::kGlide), e(P::kGlideMode) } },
+          { .name = "LFO", .shortName = "LFO",
+            .elements = { e(P::kLfoShape), e(P::kLfoRate), e(P::kLfoDepth), e(P::kLfoRetrig) } },
+          { .name = "Glide Voice", .shortName = "Glide",
+            .elements = { e(P::kGlide), e(P::kGlideMode) } },
+          { .name = "Effects FX", .shortName = "FX",
+            .elements = { e(P::kDistType), e(P::kDistAmount), e(P::kChorusMix), e(P::kChorusRate),
+                          e(P::kChorusDepth) } },
           { .name = "Voice", .shortName = "Voice",
             .elements = { e(P::kTranspose), e(P::kVelocity), e(P::kVolume) } },
         },
@@ -836,7 +1061,7 @@ void ReeseSynthVoice::createMetadata(const Patch& /*patch*/, Patch::Metadata& me
     };
 
     metadata.instrumentTypeId = static_cast<int>(InstrumentTypeId::kReeseSynth);
-    metadata.outputChannels = Patch::Metadata::OutputChannels::kMono;
+    metadata.outputChannels = Patch::Metadata::OutputChannels::kStereo; // the chorus
     metadata.maxVoices = 1;
 }
 

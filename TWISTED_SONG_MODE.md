@@ -179,6 +179,15 @@ Code: `core/FileManager/fileManagerBrowse.cpp`, `platforms/*/SD.cpp`
   stack (legato, glide); pitch bend as MIDI.
 - Each `cr_inst_t` is ~190 KB: a pool of four in external RAM, taken from `SAMPLE_MEMORY_SIZE` (768 KB less).
 
+## REESE v2 and CRAFTY wavetable folder (v1.7.0)
+
+- REESE: its own filter envelope (ADSR, starting from the preset's amp envelope), LFO shapes (sine, triangle,
+  saw up/down, square, S&H) and key reset, a post-filter distortion (soft, hard, fold, crush) that leaves the
+  sub clean, and a stereo chorus (output now stereo). New parameters are appended so saved patches keep working.
+- CRAFTY: `/Crafty/Wavetables/*.wav` become user banks (5 frames each, band-limited to 128 harmonics, resampled to
+  256 samples: the editor's algorithm), read one file per idle call of the file manager. `/Crafty/Crafty Synth.user`
+  (the plugin's user area) is loaded first; user presets U1-1..U16-8 are selectable.
+
 ## Files
 
 | File | What |

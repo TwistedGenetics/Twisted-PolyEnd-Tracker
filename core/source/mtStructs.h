@@ -67,8 +67,9 @@ const uint32_t SAMPLE_MEMORY_SIZE = (45 * 256 * 1024);     // 11,25 MB = 133.746
 // Tmini / Tplus
 const uint32_t EXTERAL_MEMORY_ADDRESS = 0x80000000;
 const uint32_t TOTAL_EXTERNAL_MEMORY = (64 * 1024 * 1024); // 64 MB
-// ~60 MB minus 64 KB for pattern buffers, minus 768 KB for the Twisted CRAFTY synth's instance pool
-const uint32_t SAMPLE_MEMORY_SIZE = ((60 * 1024 - 64 - 768) * 1024);
+// ~60 MB minus 64 KB for pattern buffers, minus 960 KB for the Twisted CRAFTY synth (its instance pool,
+// the user area with the wavetable folder's banks, the import buffers)
+const uint32_t SAMPLE_MEMORY_SIZE = ((60 * 1024 - 64 - 960) * 1024);
 #endif
 
 const uint32_t DELAY_MEMORY_SIZE = (3 * 512 * 1024);               // 1,5 MB

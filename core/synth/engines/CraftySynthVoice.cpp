@@ -16,18 +16,23 @@
 #ifdef FEATURE_SYNTH
 
 #include "CraftySynthVoice.h"
+#include "CraftyUser.h"
 #include "PolySynth/sdk/SynthVoiceSDK.h"
+#include "Platform.h"
+#include "Tracker.h"
 #include <cr_section_macros.h>
 
 extern "C" {
 #include "crafty/cr_inst.h"
 #include "crafty/cr_text.h"
+#include "crafty/cr_user.h"
 }
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 
@@ -127,6 +132,25 @@ constexpr int kPoolSize = 4;
 __NOINIT(EXTERNAL_RAM) uint8_t craftyPool[kPoolSize][sizeof(cr_inst_t)] __attribute__((aligned(8)));
 bool craftyPoolUsed[kPoolSize] = {};
 
+// ------------------------------------------------------------------ the user area (user presets, user banks)
+// The same bytes as the FM-1's flash and the plugins' "Crafty Synth.user" file. Filled from the SD card in
+// the file manager's idle time (twistedCraftyService); until then CRAFTY has no user banks or presets.
+__NOINIT(EXTERNAL_RAM) uint8_t craftyUser[CR_USER_BYTES] __attribute__((aligned(4)));
+bool craftyUserReady = false;
+
+const uint8_t* userArea()
+{
+    return craftyUserReady ? craftyUser : nullptr;
+}
+
+const char* userBankName(void* /*ctx*/, uint32_t u)
+{
+    const cr_ubank_t* b = cr_user_bank(userArea(), u);
+    return b ? b->name : nullptr;
+}
+
+void craftyRequestScanImpl();
+
 cr_inst_t* takeInstance()
 {
     for (int i = 0; i < kPoolSize; i++)
@@ -136,6 +160,8 @@ cr_inst_t* takeInstance()
             craftyPoolUsed[i] = true;
             auto* in = reinterpret_cast<cr_inst_t*>(craftyPool[i]);
             cr_inst_init(in);
+            cr_inst_set_user(in, userArea());
+            craftyRequestScanImpl(); // pick up any new wavetables in the folder
             return in;
         }
     }
@@ -156,7 +182,7 @@ int choiceCount(int id)
 {
     switch (CR_P[id].kind)
     {
-        case CR_K_BANK: return id == CR_W2BANK ? CR_NBANK : CR_NBANK - 1; // factory banks (no user area)
+        case CR_K_BANK: return id == CR_W2BANK ? CR_BANKS : CR_BANKS - 1; // factory + the 32 user banks
         case CR_K_OMMODE: return CR_NOM;
         case CR_K_OCT: return 7;
         case CR_K_LSHAPE: return 5;
@@ -175,7 +201,14 @@ int choiceValue(int id, int i)
 {
     switch (CR_P[id].kind)
     {
-        case CR_K_BANK: return static_cast<int>(cr_bank_val(static_cast<uint32_t>(i), id == CR_W2BANK));
+        case CR_K_BANK:
+        {
+            // Wave 1 has no sine / noise bank: its choices skip it
+            uint32_t bank = static_cast<uint32_t>(i);
+            if (id != CR_W2BANK && bank >= CR_BANK_NOISE)
+                bank++;
+            return static_cast<int>(cr_bank_val(bank, id == CR_W2BANK));
+        }
         case CR_K_OMMODE: return i * 8 + 4;
         case CR_K_LSHAPE: return (i * 127) / 4;
         case CR_K_LMODE: return i == 0 ? 20 : (i == 1 ? 63 : 105);
@@ -196,7 +229,7 @@ int finalValue(int id, int presetValue, float knob)
 int presetOf(const Patch& patch)
 {
     auto v = patch.getParamValue(static_cast<int>(CraftyParamId::kPreset));
-    return v ? std::clamp<int>(static_cast<int>(std::lround(*v)), 0, CR_NFACTORY - 1) : 0;
+    return v ? std::clamp<int>(static_cast<int>(std::lround(*v)), 0, CR_NPRESET - 1) : 0;
 }
 
 // the FM-1's labels and value texts are kept as they are (capitals, big and clear on screen)
@@ -222,16 +255,336 @@ std::string paramName(int id)
 std::string valueText(const Patch& patch, int id, float knob)
 {
     cr_patch_t t;
-    (void)cr_preset_get(nullptr, static_cast<uint32_t>(presetOf(patch)), &t);
+    (void)cr_preset_get(userArea(), static_cast<uint32_t>(presetOf(patch)), &t);
     const int pv = t.p[id];
     const int fv = finalValue(id, pv, knob);
     t.p[id] = static_cast<uint8_t>(fv);
     char b[32] = {};
-    cr_param_text(&t, static_cast<uint32_t>(id), b, 1, nullptr, nullptr);
+    cr_param_text(&t, static_cast<uint32_t>(id), b, 1, userBankName, nullptr);
     std::string s = titleCase(b);
     if (choiceCount(id) > 0 && std::lround(knob) <= 0)
         s = "PRESET (" + s + ")";
     return s;
+}
+
+// ------------------------------------------------------------------ reading the wavetable folder
+constexpr const char* kCraftyFolder = "/Crafty";
+constexpr const char* kCraftyTables = "/Crafty/Wavetables";
+constexpr const char* kCraftyUserFile = "/Crafty/Crafty Synth.user";
+constexpr int kMaxFrame = 4096;      // the longest frame (one cycle) read
+constexpr int kMaxFiles = 64;
+constexpr int kWaveN = CR_WT_N;      // 256 samples a wave
+constexpr float kPeak = 26000.0f;    // the firmware's wavetable peak (CR_WT_PEAK)
+
+__NOINIT(EXTERNAL_RAM) float scanFrame[kMaxFrame];
+__NOINIT(EXTERNAL_RAM) float scanCos[kMaxFrame];
+__NOINIT(EXTERNAL_RAM) float scanSin[kMaxFrame];
+__NOINIT(EXTERNAL_RAM) float scanWaves[5][kWaveN];
+__NOINIT(EXTERNAL_RAM) float scanC256[kWaveN];
+__NOINIT(EXTERNAL_RAM) float scanS256[kWaveN];
+
+struct Scan
+{
+    bool requested = true; // read the folder once after start-up
+    int stage = 0;         // 0 idle, 1 start, 2 one file at a time
+    char* names[kMaxFiles] = {};
+    int count = 0, next = 0, bank = 0;
+} scan;
+
+struct WavInfo
+{
+    uint32_t dataOff = 0, dataLen = 0;
+    int format = 0, channels = 0, bits = 0, clm = 0;
+};
+
+uint32_t rd32(const uint8_t* p) { return p[0] | (p[1] << 8) | (p[2] << 16) | (static_cast<uint32_t>(p[3]) << 24); }
+uint16_t rd16(const uint8_t* p) { return static_cast<uint16_t>(p[0] | (p[1] << 8)); }
+
+bool readWavInfo(FileSystem* fs, FileSystem::FileHandle fh, WavInfo& w)
+{
+    uint8_t h[16];
+    if (fs->readFile(h, 12, fh) != 12 || std::memcmp(h, "RIFF", 4) != 0 || std::memcmp(h + 8, "WAVE", 4) != 0)
+        return false;
+    const uint32_t size = static_cast<uint32_t>(fs->getFileSize(fh));
+    uint32_t pos = 12;
+    while (pos + 8 <= size)
+    {
+        if (!fs->seekFile(pos, fh) || fs->readFile(h, 8, fh) != 8)
+            break;
+        const uint32_t len = rd32(h + 4), body = pos + 8;
+        if (std::memcmp(h, "fmt ", 4) == 0 && len >= 16)
+        {
+            uint8_t f[16];
+            if (fs->readFile(f, 16, fh) != 16)
+                return false;
+            w.format = rd16(f);
+            w.channels = rd16(f + 2);
+            w.bits = rd16(f + 14);
+        }
+        else if (std::memcmp(h, "clm ", 4) == 0)
+        {
+            char c[17] = {};
+            const int n = static_cast<int>(std::min<uint32_t>(len, 16));
+            if (fs->readFile(c, n, fh) == n)
+            {
+                const char* m = std::strstr(c, "<!>");
+                if (m)
+                    w.clm = std::atoi(m + 3);
+            }
+        }
+        else if (std::memcmp(h, "data", 4) == 0)
+        {
+            w.dataOff = body;
+            w.dataLen = std::min(len, size - body);
+        }
+        pos = body + len + (len & 1u);
+    }
+    return w.dataLen > 0 && w.channels > 0 &&
+           (w.bits == 8 || w.bits == 16 || w.bits == 24 || w.bits == 32);
+}
+
+// one frame of the table, first channel, as floats
+bool readFrame(FileSystem* fs, FileSystem::FileHandle fh, const WavInfo& w, uint32_t frame, int size)
+{
+    const int bps = w.bits / 8, step = bps * w.channels;
+    if (!fs->seekFile(w.dataOff + frame * static_cast<uint32_t>(size) * step, fh))
+        return false;
+    uint8_t buf[1024];
+    int done = 0;
+    while (done < size)
+    {
+        const int want = std::min(size - done, static_cast<int>(sizeof(buf)) / step);
+        if (fs->readFile(buf, want * step, fh) != want * step)
+            return false;
+        for (int i = 0; i < want; i++)
+        {
+            const uint8_t* p = buf + i * step;
+            float x;
+            if (w.format == 3 && w.bits == 32)
+            {
+                uint32_t u = rd32(p);
+                std::memcpy(&x, &u, 4);
+            }
+            else if (w.bits == 16)
+                x = static_cast<int16_t>(rd16(p)) / 32768.0f;
+            else if (w.bits == 24)
+                x = static_cast<float>(static_cast<int32_t>(rd32(p) << 8) >> 8) / 8388608.0f;
+            else if (w.bits == 32)
+                x = static_cast<float>(static_cast<int32_t>(rd32(p))) / 2147483648.0f;
+            else
+                x = (p[0] - 128) / 128.0f;
+            scanFrame[done + i] = x;
+        }
+        done += want;
+    }
+    return true;
+}
+
+// a frame of any length to 256 samples with at most 128 harmonics, DC removed (Crafty's editor's way)
+void resampleFrame(int L, float* out)
+{
+    float* c256 = scanC256;
+    float* s256 = scanS256;
+    static bool ready = false;
+    if (!ready)
+    {
+        for (int i = 0; i < kWaveN; i++)
+        {
+            c256[i] = std::cos(6.28318531f * i / kWaveN);
+            s256[i] = std::sin(6.28318531f * i / kWaveN);
+        }
+        ready = true;
+    }
+    for (int i = 0; i < kWaveN; i++)
+        out[i] = 0.0f;
+    for (int k = 1; k <= 128 && k < L / 2 + (L % 2); k++)
+    {
+        float re = 0.0f, im = 0.0f;
+        int idx = 0;
+        for (int i = 0; i < L; i++)
+        {
+            re += scanFrame[i] * scanCos[idx];
+            im += scanFrame[i] * scanSin[idx];
+            idx += k;
+            if (idx >= L)
+                idx -= L;
+        }
+        re *= 2.0f / L;
+        im *= 2.0f / L;
+        if (k == 128)
+        {
+            re *= 0.5f;
+            im = 0.0f;
+        }
+        if (re * re + im * im < 1e-12f)
+            continue;
+        int j = 0;
+        for (int i = 0; i < kWaveN; i++)
+        {
+            out[i] += re * c256[j] + im * s256[j];
+            j = (j + k) & (kWaveN - 1);
+        }
+    }
+}
+
+// a WAV file into user bank u: five frames picked evenly through the table
+bool importWav(FileSystem* fs, const char* name, uint32_t u)
+{
+    char path[300];
+    snprintf(path, sizeof(path), "%s/%s", kCraftyTables, name);
+    auto [isOpen, fh] = fs->openFile(path, FileSystem::FileOpenMode::kRead);
+    if (!isOpen)
+        return false;
+    WavInfo w;
+    bool ok = readWavInfo(fs, fh, w);
+    int size = 0;
+    uint32_t frames = 0;
+    if (ok)
+    {
+        const uint32_t n = w.dataLen / static_cast<uint32_t>((w.bits / 8) * w.channels);
+        size = w.clm > 0 ? w.clm : 2048;
+        if (n < static_cast<uint32_t>(size))
+            size = static_cast<int>(n); // one cycle, whatever its length
+        ok = size >= 8 && size <= kMaxFrame;
+        frames = ok ? std::max<uint32_t>(1, n / static_cast<uint32_t>(size)) : 0;
+    }
+    auto& waves = scanWaves;
+    if (ok)
+    {
+        for (int i = 0; i < size; i++)
+        {
+            scanCos[i] = std::cos(6.28318531f * i / size);
+            scanSin[i] = std::sin(6.28318531f * i / size);
+        }
+        for (int k = 0; k < 5 && ok; k++)
+        {
+            const uint32_t pick = static_cast<uint32_t>(std::lround(k * (frames - 1) / 4.0f));
+            ok = readFrame(fs, fh, w, pick, size);
+            if (ok)
+                resampleFrame(size, waves[k]);
+        }
+    }
+    fs->closeFile(fh);
+    if (!ok)
+        return false;
+
+    float peak = 0.0f;
+    for (auto& wave : waves)
+        for (float v : wave)
+            peak = std::max(peak, std::fabs(v));
+    if (peak <= 0.0f)
+        return false;
+
+    auto* b = reinterpret_cast<cr_ubank_t*>(craftyUser + CR_FL_BANKS + u * CR_SECTOR);
+    std::memset(b, 0, sizeof(*b));
+    b->magic = CR_UBANK_MAGIC;
+    b->ver = 1;
+    int c = 0;
+    for (const char* s = name; *s && *s != '.' && c < 13; s++)
+    {
+        char ch = *s;
+        if (ch >= 'a' && ch <= 'z')
+            ch = static_cast<char>(ch - 'a' + 'A');
+        if (ch >= ' ' && ch <= '_')
+            b->name[c++] = ch;
+    }
+    const float g = kPeak / peak;
+    for (int k = 0; k < 5; k++)
+        for (int i = 0; i < kWaveN; i++)
+            b->w[k][i] = static_cast<int16_t>(std::lround(waves[k][i] * g));
+    return true;
+}
+
+bool bankInUse(uint32_t u)
+{
+    const auto* b = reinterpret_cast<const cr_ubank_t*>(craftyUser + CR_FL_BANKS + u * CR_SECTOR);
+    return b->magic == CR_UBANK_MAGIC && b->ver == 1u;
+}
+
+bool nameLess(const char* a, const char* b)
+{
+    for (;; a++, b++)
+    {
+        int x = (*a >= 'a' && *a <= 'z') ? *a - 32 : *a, y = (*b >= 'a' && *b <= 'z') ? *b - 32 : *b;
+        if (x != y || !x)
+            return x < y;
+    }
+}
+
+void craftyRequestScanImpl()
+{
+    scan.requested = true;
+}
+
+void craftyServiceImpl()
+{
+    FileSystem* fs = Tracker::getInstance()->getPlatform()->getFileSystem();
+    if (fs == nullptr || fs->isAsyncReadBusy())
+        return;
+
+    if (scan.stage == 0)
+    {
+        if (!scan.requested)
+            return;
+        scan.requested = false;
+        scan.stage = 1;
+    }
+
+    if (scan.stage == 1)
+    {
+        // start: an empty user area, the plugin's user file if there is one, then the folder's list
+        std::memset(craftyUser, 0xFF, sizeof(craftyUser));
+        if (!fs->exists(kCraftyFolder))
+            fs->mkdir(0, kCraftyFolder);
+        if (!fs->exists(kCraftyTables))
+            fs->mkdir(0, kCraftyTables);
+        if (fs->exists(kCraftyUserFile))
+        {
+            auto [isOpen, fh] = fs->openFile(kCraftyUserFile, FileSystem::FileOpenMode::kRead);
+            if (isOpen)
+            {
+                const size_t n = std::min<size_t>(fs->getFileSize(fh), sizeof(craftyUser));
+                if (fs->readFile(craftyUser, n, fh) < 0)
+                    std::memset(craftyUser, 0xFF, sizeof(craftyUser));
+                fs->closeFile(fh);
+            }
+        }
+        for (auto& n : scan.names)
+            n = nullptr;
+        const int found = fs->createFilesList(kCraftyTables, 0, scan.names, kMaxFiles, 6000,
+                                              FileSystem::enListFileFilter_wave);
+        scan.count = found > 0 ? found : 0;
+        std::sort(scan.names, scan.names + scan.count, nameLess);
+        scan.next = 0;
+        scan.bank = 0;
+        scan.stage = 2;
+        return;
+    }
+
+    // one file per call: into the next free user bank
+    while (scan.bank < static_cast<int>(CR_NUBANK) && bankInUse(static_cast<uint32_t>(scan.bank)))
+        scan.bank++;
+    if (scan.next < scan.count && scan.bank < static_cast<int>(CR_NUBANK))
+    {
+        if (importWav(fs, scan.names[scan.next], static_cast<uint32_t>(scan.bank)))
+            scan.bank++;
+        scan.next++;
+        return;
+    }
+
+    // done: every CRAFTY instrument plays the new banks
+    for (int i = 0; i < scan.count; i++)
+    {
+        delete[] scan.names[i];
+        scan.names[i] = nullptr;
+    }
+    craftyUserReady = true;
+    for (int i = 0; i < kPoolSize; i++)
+    {
+        if (craftyPoolUsed[i])
+            cr_inst_set_user(reinterpret_cast<cr_inst_t*>(craftyPool[i]), craftyUser);
+    }
+    scan.stage = 0;
 }
 
 } // namespace
@@ -320,7 +673,7 @@ class CraftySynthVoice : public sdk::CustomSynthVoice<CraftySynthVoice, CraftyPa
 
     static void setPreset(CraftySynthVoice& v, float x)
     {
-        v.preset = std::clamp<int>(static_cast<int>(std::lround(x)), 0, CR_NFACTORY - 1);
+        v.preset = std::clamp<int>(static_cast<int>(std::lround(x)), 0, CR_NPRESET - 1);
         if (v.in == nullptr)
             return;
         cr_inst_load(v.in, static_cast<uint32_t>(v.preset));
@@ -348,7 +701,7 @@ class CraftySynthVoice : public sdk::CustomSynthVoice<CraftySynthVoice, CraftyPa
         if (in == nullptr)
             return;
         cr_patch_t t;
-        (void)cr_preset_get(nullptr, static_cast<uint32_t>(preset), &t);
+        (void)cr_preset_get(userArea(), static_cast<uint32_t>(preset), &t);
         cr_inst_param(in, static_cast<uint32_t>(id), static_cast<uint32_t>(finalValue(id, t.p[id], knob[id])));
     }
 };
@@ -400,15 +753,17 @@ void CraftySynthVoice::createMetadata(const Patch& /*patch*/, Patch::Metadata& m
         .displayName = "Preset",
         .defaultValue = 0,
         .minValue = 0,
-        .maxValue = static_cast<Patch::paramvalue_short_t>(CR_NFACTORY - 1),
+        .maxValue = static_cast<Patch::paramvalue_short_t>(CR_NPRESET - 1),
         .isEnum = true,
         .valueFormatter = [](const Patch&, Patch::paramvalue_t value)
         {
-            const uint32_t slot = static_cast<uint32_t>(std::clamp<int>(std::lround(value), 0, CR_NFACTORY - 1));
-            cr_patch_t t;
-            (void)cr_preset_get(nullptr, slot, &t);
+            const uint32_t slot = static_cast<uint32_t>(std::clamp<int>(std::lround(value), 0, CR_NPRESET - 1));
             char label[8];
             cr_preset_label(slot, label);
+            if (slot >= CR_NFACTORY && !cr_user_saved(userArea(), slot))
+                return std::string(label) + " (EMPTY)";
+            cr_patch_t t;
+            (void)cr_preset_get(userArea(), slot, &t);
             char name[13] = {};
             std::memcpy(name, t.name, 12);
             return std::string(label) + " " + titleCase(name);
@@ -485,6 +840,24 @@ std::unique_ptr<InstrumentType> createCraftySynth()
                       { return std::make_unique<CraftySynthVoice>(); } });
 }
 
+void craftyService()
+{
+    craftyServiceImpl();
+}
+void craftyRequestScan()
+{
+    craftyRequestScanImpl();
+}
+
 } // namespace polysynth
+
+void twistedCraftyService()
+{
+    polysynth::craftyService();
+}
+void twistedCraftyRequestScan()
+{
+    polysynth::craftyRequestScan();
+}
 
 #endif
