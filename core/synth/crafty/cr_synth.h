@@ -14,7 +14,11 @@
 #include "cr_filter.h"
 #include "cr_fx.h"
 
-#define CR_CTRL 4u                     /* modulation, envelopes and pitches: every 4 samples (11 kHz: LFO 2 reaches audio rate) */
+/* Twisted Tracker: where the per-sample code goes (the Tracker+ puts it in its fast instruction RAM) */
+#ifndef CR_HOT
+#define CR_HOT
+#endif
+#define CR_CTRL 16u /* Twisted Tracker: 16 (the FM-1: 4); a quarter of the control work */                     /* modulation, envelopes and pitches: every 4 samples (11 kHz: LFO 2 reaches audio rate) */
 #define CR_PAIRS 4u                    /* a pair: one Wave 1 and one Wave 2 oscillator (8 in all) */
 #define CR_DLY_LEN 32768u              /* the delay's memory, 16-bit mono: 0.74 s at 44.1 kHz (0.4: the reverb has the rest) */
 #define CR_SYN_MEM (CR_DLY_LEN + CR_FX_MEM + CR_COMB_LEN)   /* int16 samples the synth is given: 144 KB */

@@ -36,6 +36,8 @@ typedef struct {
     /* OTT */
     float ott, ot_lo[2], ot_hi[2], ot_env[3], ot_g[3], ot_mk;
     uint32_t ot_tick;
+    float set_last[15];                  /* Twisted: cr_fx_set's last arguments (unchanged: nothing to work out) */
+    int set_valid;
 } cr_fx_t;
 
 void cr_fx_init(cr_fx_t *f, int16_t *mem /* CR_FX_MEM */);

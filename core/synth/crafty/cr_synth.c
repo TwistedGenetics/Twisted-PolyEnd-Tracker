@@ -485,7 +485,7 @@ static inline float wrap1(float p)
 static inline float hann(float p) { return 0.5f - 0.5f * cr_sin_turn(p + 0.25f < 1.f ? p + 0.25f : p - 0.75f); }
 static inline float ror(float p, float m) { return p < m ? 0.5f * p / m : 0.5f + 0.5f * (p - m) / (1.f - m); }
 
-void cr_synth_render(cr_synth_t *s, float *lr, uint32_t n)
+CR_HOT void cr_synth_render(cr_synth_t *s, float *lr, uint32_t n)
 {
     const float sc = cr_wt_scale();
     uint32_t done = 0;

@@ -65,6 +65,18 @@ void cr_fx_set(cr_fx_t *f, uint32_t era, float crush, float phmix, float phrate,
                uint32_t vmode, float size, float decay, float vmix, float warp, float dens, float vmod, float ott)
 {
     uint32_t i;
+    {   /* Twisted: called every control block; the coefficients only change when an argument does */
+        const float a[15] = { (float)era, crush, phmix, phrate, chmix, chrate, (float)vmode, size, decay, vmix,
+                              warp, dens, vmod, ott, 0.f };
+        int same = f->set_valid;
+        for (i = 0; i < 15u && same; i++)
+            same = a[i] == f->set_last[i];
+        if (same)
+            return;
+        for (i = 0; i < 15u; i++)
+            f->set_last[i] = a[i];
+        f->set_valid = 1;
+    }
     /* EraCrush */
     f->era = era > 5u ? 5u : era;
     if (f->era) {

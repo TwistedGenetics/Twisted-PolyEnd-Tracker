@@ -129,7 +129,10 @@ static float onepole(float *s, float G, float x)
     return y;
 }
 
-float cr_filt_run(cr_filt_t *f, float x)
+#ifndef CR_HOT
+#define CR_HOT
+#endif
+CR_HOT float cr_filt_run(cr_filt_t *f, float x)
 {
     float m = f->m;
     switch (f->type) {
